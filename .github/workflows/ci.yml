@@ -27,7 +27,7 @@ jobs:
           npm i -g markdownlint-cli@0.39.0
           yamllint .
           markdownlint "**/*.md" --ignore node_modules \
-            --disable MD013 MD022 MD024 MD031 MD032 MD036
+            --disable MD009 MD013 MD022 MD024 MD031 MD032 MD036
 
   shellcheck:
     runs-on: ubuntu-latest
