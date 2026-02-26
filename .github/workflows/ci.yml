@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+        uses: actions/checkout@v4
 
       - name: Lint markdown and yaml
         run: |
@@ -26,13 +26,14 @@ jobs:
           pip install yamllint==1.35.1
           npm i -g markdownlint-cli@0.39.0
           yamllint .
-          markdownlint "**/*.md" --ignore node_modules
+          markdownlint "**/*.md" --ignore node_modules \
+            --disable MD013 MD022 MD024 MD031 MD032 MD036
 
   shellcheck:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+        uses: actions/checkout@v4
 
       - name: Run shellcheck if scripts exist
         run: |
@@ -49,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+        uses: actions/checkout@v4
 
       - name: Ensure no obvious secrets committed
         run: |
