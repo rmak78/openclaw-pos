@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenClaw POS — Global Offline-First ERP</title>
+  <style>
+    :root {
+      --bg: #050816;
+      --card: #0d1329;
+      --muted: #94a3b8;
+      --text: #e2e8f0;
+      --accent: #22d3ee;
+      --accent2: #a78bfa;
+      --ok: #34d399;
+      --warn: #fbbf24;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      color: var(--text);
+      background: radial-gradient(circle at 20% 20%, #1d4ed840 0%, transparent 35%),
+                  radial-gradient(circle at 80% 0%, #7c3aed40 0%, transparent 40%),
+                  var(--bg);
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 28px 18px 80px; }
+    .hero {
+      border: 1px solid #33415566; border-radius: 18px; padding: 28px;
+      background: linear-gradient(135deg, #0f172a 0%, #111827 100%);
+      box-shadow: 0 20px 60px #00000055;
+    }
+    h1 { margin: 0 0 10px; font-size: clamp(28px, 5vw, 46px); line-height: 1.05; }
+    .tag { color: var(--muted); font-size: 15px; margin-bottom: 16px; }
+    .badges { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0 0; }
+    .badge {
+      border: 1px solid #334155; border-radius: 999px; padding: 7px 12px;
+      font-size: 12px; color: #cbd5e1; background: #0b1227;
+    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: 14px; margin-top: 18px; }
+    .card {
+      background: var(--card); border: 1px solid #33415566; border-radius: 14px;
+      padding: 16px; min-height: 140px;
+    }
+    .card h3 { margin: 0 0 8px; font-size: 17px; }
+    .muted { color: var(--muted); font-size: 13px; }
+    .kpis { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-top: 18px; }
+    .kpi { background: #0b1227; border: 1px solid #33415566; border-radius: 12px; padding: 12px; }
+    .kpi b { font-size: 22px; }
+    .section { margin-top: 24px; }
+    .cta { display:inline-block; margin-top:12px; color:#001018; background:linear-gradient(90deg,var(--accent),var(--accent2)); padding:10px 14px; border-radius:10px; text-decoration:none; font-weight:700; }
+    .status { margin-top: 10px; font-size: 13px; color: #cbd5e1; }
+    .dot { display:inline-block; width:8px; height:8px; border-radius:999px; margin-right:6px; }
+    .ok{ background:var(--ok);} .warn{ background:var(--warn);} 
+    @media (max-width: 760px){ .kpis{grid-template-columns: repeat(2,1fr);} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="tag">rmak78/openclaw-pos • Cloudflare Workers + D1 • Offline-first</div>
+      <h1>OpenClaw POS + ERP</h1>
+      <p class="tag">Global hierarchy (HO → Country → Region → Branch → Till), resilient offline sync, finance-grade controls, and workforce/payroll built-in.</p>
+      <div class="badges">
+        <span class="badge">Pakistan-first rollout</span>
+        <span class="badge">Expansion-ready: UAE/UK/EU/SG/MY/US/CA</span>
+        <span class="badge">Priority: Offline > Speed > Accounting</span>
+        <span class="badge">Tax mode: Inclusive / Exclusive</span>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><div class="muted">Pilot Branches</div><b>10</b></div>
+        <div class="kpi"><div class="muted">Warehouses</div><b>3</b></div>
+        <div class="kpi"><div class="muted">Tills/Branch</div><b>2–7</b></div>
+        <div class="kpi"><div class="muted">API Base</div><b>/v1</b></div>
+      </div>
+      <a class="cta" href="https://github.com/rmak78/openclaw-pos" target="_blank" rel="noreferrer">View GitHub Repository</a>
+      <div class="status"><span class="dot ok"></span>API Live: https://pos-api.bixisoft.com/v1</div>
+    </section>
+
+    <section class="section">
+      <h2>Agent War-Room Team</h2>
+      <div class="grid">
+        <article class="card"><h3>🧠 Lead Architect</h3><p class="muted">Designs multi-tier topology, offline sync protocol, idempotency, and pilot acceptance criteria.</p></article>
+        <article class="card"><h3>💼 FinOps Specialist</h3><p class="muted">Defines journals, posting rules, reconciliation controls, multi-currency and tax handling.</p></article>
+        <article class="card"><h3>⚙️ DevOps/GitHub</h3><p class="muted">Owns CI/CD, branch protections, Cloudflare deploy strategy, backups and observability.</p></article>
+        <article class="card"><h3>📘 Product/Docs</h3><p class="muted">Creates branch/till SOPs, management report catalog, training and rollout playbooks.</p></article>
+        <article class="card"><h3>👥 HRIS</h3><p class="muted">Employee lifecycle, attendance fusion (POS+biometric), shift policy and onboarding controls.</p></article>
+        <article class="card"><h3>⚖️ Payroll & Legal</h3><p class="muted">Country compliance packs, payroll cadences, statutory checklists, legal docs and controls.</p></article>
+      </div>
+    </section>
+  </div>
+</body>
+</html>
