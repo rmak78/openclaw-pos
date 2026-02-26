@@ -1,0 +1,12 @@
+name = "openclaw-pos-api"
+main = "src/index.ts"
+compatibility_date = "2026-02-26"
+workers_dev = true
+
+[vars]
+APP_ENV = "dev"
+
+[[d1_databases]]
+binding = "openclaw_pos"
+database_name = "openclaw_pos"
+database_id = "8b515712-fd12-40cb-8c9d-2bd35f38140f"
