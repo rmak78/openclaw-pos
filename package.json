@@ -1,0 +1,30 @@
+{
+  "name": "openclaw-pos",
+  "version": "1.0.0",
+  "description": "Hierarchy: Global HO > Country HO > Regional > Branch > Tills",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "cfcheck": "wrangler whoami"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rmak78/openclaw-pos.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rmak78/openclaw-pos/issues"
+  },
+  "homepage": "https://github.com/rmak78/openclaw-pos#readme",
+  "devDependencies": {
+    "wrangler": "^4.68.1"
+  }
+}
