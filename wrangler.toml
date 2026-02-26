@@ -9,6 +9,7 @@ routes = [
 
 [vars]
 APP_ENV = "dev"
+API_WRITE_KEY = "change-me"
 
 [[d1_databases]]
 binding = "openclaw_pos"
