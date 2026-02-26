@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-docs-and-yaml:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+
+      - name: Lint markdown and yaml
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          pip install yamllint==1.35.1
+          npm i -g markdownlint-cli@0.39.0
+          yamllint .
+          markdownlint "**/*.md" --ignore node_modules
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+
+      - name: Run shellcheck if scripts exist
+        run: |
+          set -euo pipefail
+          if find . -type f -name "*.sh" | grep -q .; then
+            sudo apt-get update
+            sudo apt-get install -y shellcheck
+            find . -type f -name "*.sh" -print0 | xargs -0 -r shellcheck
+          else
+            echo "No shell scripts found."
+          fi
+
+  git-hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+
+      - name: Ensure no obvious secrets committed
+        run: |
+          set -euo pipefail
+          ! git grep -nE "(AKIA[0-9A-Z]{16}|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|xox[baprs]-|ghp_[A-Za-z0-9]{36})" -- . ':!*.md'

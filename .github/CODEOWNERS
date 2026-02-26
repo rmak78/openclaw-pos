@@ -1,0 +1,13 @@
+# Enforce review ownership on protected branches
+# Replace GitHub handles with real maintainers before enabling required reviewers.
+
+* @global-pos-erp/maintainers
+
+# Domain-specific ownership
+/apps/ @global-pos-erp/backend @global-pos-erp/frontend
+/services/ @global-pos-erp/backend
+/packages/ @global-pos-erp/backend @global-pos-erp/frontend
+/data-model/ @global-pos-erp/architecture
+/infra/ @global-pos-erp/devops
+/docs/ @global-pos-erp/docs
+/tests/ @global-pos-erp/qa
