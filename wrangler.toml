@@ -1,7 +1,11 @@
 name = "openclaw-pos-api"
 main = "src/index.ts"
 compatibility_date = "2026-02-26"
-workers_dev = true
+workers_dev = false
+
+routes = [
+  { pattern = "pos-api.bixisoft.com/*", zone_name = "bixisoft.com" }
+]
 
 [vars]
 APP_ENV = "dev"
