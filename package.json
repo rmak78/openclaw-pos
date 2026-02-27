@@ -8,7 +8,8 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npm run test:smoke",
+    "test:smoke": "node --import tsx --test tests/smoke-api.test.mjs",
     "deploy": "wrangler deploy",
     "dev": "wrangler dev",
     "cfcheck": "wrangler whoami"
@@ -25,6 +26,7 @@
   },
   "homepage": "https://github.com/rmak78/openclaw-pos#readme",
   "devDependencies": {
+    "tsx": "^4.20.6",
     "wrangler": "^4.68.1"
   }
 }
