@@ -87,10 +87,24 @@ Also planned/expanding:
 - `GET /v1/health`
 - `GET /v1/db-check`
 - `GET /v1/meta`
-- `GET /v1/org-units`
-- `POST /v1/org-units`
-- `GET /v1/employees`
-- `POST /v1/employees`
+- `GET /v1/modules`
+- `GET/POST /v1/org-units`
+- `GET/POST /v1/employees`
+- `GET/POST /v1/channels`
+- `GET/POST /v1/channel-accounts`
+- `GET/POST /v1/orders`
+- `GET/POST /v1/shipments`
+- `GET/POST /v1/customers`
+- `GET/POST /v1/inventory-items`
+- `GET/POST /v1/prices`
+- `GET/POST /v1/tax-rules`
+- `GET/POST /v1/payment-methods`
+- `GET/POST /v1/sync-outbox`
+- `GET/POST /v1/sync-conflicts`
+- `GET/POST /v1/app-config`
+- `POST /v1/seed/demo-branch`
+- `POST /v1/connectors/shopify/order-webhook`
+- `POST /v1/connectors/amazon/order-webhook`
 
 ---
 
@@ -175,4 +189,11 @@ Follow project updates on the repo and website for sponsorship options.
 ## Status
 
 **Active build phase.**
+
+Latest delivered progress:
+- Core module APIs now live for customers, inventory, pricing, tax, and payments
+- Offline sync baseline added with outbox + conflict queues
+- Pakistan-first config baseline added (`tax.default_mode`, `currency.operational=PKR`, `currency.reporting=USD`)
+- Demo seed endpoint included for a Karachi branch + till setup (`/v1/seed/demo-branch`)
+
 Foundations are live, docs are expanding rapidly, and country packs are being generated in parallel.
