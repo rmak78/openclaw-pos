@@ -6,471 +6,408 @@
   <title>OpenClaw POS Prototype Shell</title>
   <style>
     :root {
-      color-scheme: dark;
-      --bg: #070b17;
-      --surface-0: #0d1425;
-      --surface-1: #111b31;
-      --surface-2: #15233e;
-      --line: #283a60;
-      --line-soft: #1b2a4a;
-      --text: #edf3ff;
-      --muted: #9ab0d2;
-      --brand: #55d8ff;
-      --brand-2: #6f7cff;
-      --success: #34d399;
-      --warning: #fbbf24;
+      --bg: #0b1020;
+      --panel: #121a2f;
+      --panel-2: #0f1629;
+      --line: #283451;
+      --text: #e6edf7;
+      --muted: #9dacbf;
+      --brand: #58d5ff;
+      --ok: #4ade80;
+      --warn: #facc15;
       --danger: #fb7185;
-      --radius-lg: 20px;
-      --radius-md: 14px;
-      --radius-sm: 10px;
-      --shadow-1: 0 16px 40px rgba(6, 10, 20, 0.52);
-      --shadow-2: 0 12px 28px rgba(6, 10, 20, 0.36);
-      --space-1: 6px;
-      --space-2: 10px;
-      --space-3: 14px;
-      --space-4: 18px;
-      --space-5: 24px;
-      --space-6: 32px;
+      --focus: #93c5fd;
     }
-
     * { box-sizing: border-box; }
-
     body {
       margin: 0;
-      min-height: 100vh;
-      font-family: Inter, "SF Pro Text", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      font-size: 15px;
-      line-height: 1.45;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 500px at 10% -10%, #1d4ed855, transparent 55%), var(--bg);
       color: var(--text);
-      background:
-        radial-gradient(900px 420px at 6% -8%, rgba(85, 216, 255, 0.18), transparent 65%),
-        radial-gradient(680px 340px at 92% -4%, rgba(111, 124, 255, 0.2), transparent 58%),
-        linear-gradient(180deg, #060b17 0%, #070d1b 55%, #071022 100%);
-    }
-
-    .app {
-      display: grid;
-      grid-template-columns: 290px minmax(0, 1fr);
       min-height: 100vh;
-      gap: var(--space-5);
-      padding: var(--space-5);
     }
-
-    .sidebar {
-      background: linear-gradient(175deg, rgba(17, 27, 49, 0.94), rgba(13, 20, 37, 0.94));
-      border: 1px solid var(--line-soft);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-1);
-      padding: var(--space-5) var(--space-4);
+    .app { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+    aside {
+      border-right: 1px solid var(--line);
+      background: #0a1020;
+      padding: 20px 14px;
       position: sticky;
-      top: var(--space-5);
-      height: calc(100vh - (var(--space-5) * 2));
+      top: 0;
+      height: 100vh;
       overflow: auto;
-      backdrop-filter: blur(12px);
     }
-
-    .brand {
-      margin-bottom: var(--space-5);
-    }
-
-    .brand h1 {
-      margin: 0;
-      font-size: 20px;
-      letter-spacing: 0.2px;
-      font-weight: 700;
-    }
-
-    .brand p {
-      margin: var(--space-2) 0 0;
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    .nav {
-      display: grid;
-      gap: var(--space-2);
-    }
-
+    .logo { font-size: 18px; font-weight: 700; margin: 0 0 16px; }
+    .sub { color: var(--muted); font-size: 12px; margin-bottom: 16px; }
+    .nav { display: grid; gap: 8px; }
     .nav button {
       width: 100%;
       text-align: left;
-      border: 1px solid var(--line-soft);
-      color: var(--text);
-      background: linear-gradient(165deg, rgba(22, 35, 62, 0.62), rgba(14, 23, 43, 0.9));
-      border-radius: var(--radius-sm);
-      padding: 12px;
-      font-weight: 600;
-      font-size: 14px;
-      cursor: pointer;
-      transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
-    }
-
-    .nav button:hover {
-      transform: translateY(-1px);
-      border-color: #3d5f93;
-      box-shadow: 0 10px 20px rgba(5, 8, 16, 0.35);
-    }
-
-    .nav button.active {
-      border-color: rgba(85, 216, 255, 0.75);
-      background: linear-gradient(140deg, rgba(30, 50, 84, 0.95), rgba(21, 35, 60, 0.92));
-      box-shadow: inset 0 0 0 1px rgba(85, 216, 255, 0.42), 0 12px 25px rgba(85, 216, 255, 0.08);
-    }
-
-    .tip {
-      margin-top: var(--space-5);
-      color: var(--muted);
-      font-size: 12px;
-      border-top: 1px dashed var(--line);
-      padding-top: var(--space-3);
-    }
-
-    .main {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-4);
-    }
-
-    .topbar {
-      border: 1px solid var(--line-soft);
-      border-radius: var(--radius-lg);
-      padding: var(--space-5);
-      background: linear-gradient(150deg, rgba(17, 27, 49, 0.88), rgba(10, 16, 29, 0.9));
-      box-shadow: var(--shadow-2);
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: var(--space-4);
-      flex-wrap: wrap;
-    }
-
-    .headline {
-      margin: 0;
-      font-size: clamp(30px, 3.2vw, 40px);
-      line-height: 1.08;
-      letter-spacing: -0.02em;
-    }
-
-    .subtitle {
-      margin: var(--space-2) 0 0;
-      color: var(--muted);
-      max-width: 72ch;
-    }
-
-    .pill-row {
-      display: flex;
-      gap: var(--space-2);
-      flex-wrap: wrap;
-    }
-
-    .pill {
       border: 1px solid var(--line);
-      border-radius: 999px;
-      background: rgba(14, 23, 43, 0.78);
-      color: #c7d5ed;
-      font-size: 12px;
-      padding: 7px 11px;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      white-space: nowrap;
-    }
-
-    .dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: var(--brand);
-      box-shadow: 0 0 0 4px rgba(85, 216, 255, 0.18);
-    }
-
-    .screen {
-      display: none;
-      border: 1px solid var(--line-soft);
-      border-radius: var(--radius-lg);
-      background: linear-gradient(165deg, rgba(17, 27, 49, 0.86), rgba(10, 16, 29, 0.92));
-      box-shadow: var(--shadow-2);
-      padding: var(--space-5);
-    }
-
-    .screen.active { display: block; }
-
-    .section-title {
-      margin: 0;
-      font-size: clamp(24px, 2.4vw, 30px);
-      letter-spacing: -0.02em;
-    }
-
-    .section-desc {
-      margin: var(--space-2) 0 var(--space-5);
-      color: var(--muted);
-      max-width: 80ch;
-    }
-
-    .grid {
-      display: grid;
-      gap: var(--space-3);
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    }
-
-    .card {
-      border: 1px solid var(--line-soft);
-      border-radius: var(--radius-md);
-      background: linear-gradient(155deg, rgba(20, 33, 58, 0.88), rgba(11, 19, 35, 0.94));
-      padding: var(--space-4);
-      min-height: 126px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      gap: var(--space-2);
-      transition: border-color 0.18s ease, transform 0.18s ease;
-    }
-
-    .card:hover {
-      border-color: #4168a1;
-      transform: translateY(-1px);
-    }
-
-    .card h3 {
-      margin: 0;
-      font-size: 15px;
-      font-weight: 600;
-      color: #d5e1f6;
-      letter-spacing: 0.01em;
-    }
-
-    .label {
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .kpi {
-      font-size: clamp(26px, 2.6vw, 34px);
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      line-height: 1;
-    }
-
-    .state-success { color: var(--success); }
-    .state-warning { color: var(--warning); }
-    .state-danger { color: var(--danger); }
-
-    .table-wrap {
-      margin-top: var(--space-4);
-      border: 1px solid var(--line-soft);
-      border-radius: var(--radius-md);
-      overflow: hidden;
-      background: rgba(10, 16, 29, 0.88);
-    }
-
-    .data-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-
-    .data-table thead {
-      background: rgba(27, 42, 74, 0.72);
-      color: #cfdbf1;
-    }
-
-    .data-table th,
-    .data-table td {
-      text-align: left;
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--line-soft);
-      vertical-align: middle;
-    }
-
-    .data-table tbody tr:hover {
-      background: rgba(85, 216, 255, 0.06);
-    }
-
-    .actions {
-      display: flex;
-      gap: var(--space-2);
-      flex-wrap: wrap;
-      margin-top: var(--space-4);
-    }
-
-    .btn {
-      border: 1px solid #325182;
-      background: linear-gradient(145deg, #1a2c4f, #142340);
+      background: var(--panel-2);
       color: var(--text);
       border-radius: 10px;
-      padding: 10px 14px;
-      font-size: 13px;
-      font-weight: 600;
+      padding: 10px;
       cursor: pointer;
-      transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+      transition: transform 130ms ease, border-color 130ms ease, background 130ms ease, box-shadow 130ms ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .nav button:hover { transform: translateY(-1px); border-color: #3b82f688; }
+    .nav button.active {
+      border-color: #3b82f6;
+      background: #162342;
+      box-shadow: inset 0 0 0 1px #3b82f6aa;
     }
 
-    .btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 8px 18px rgba(5, 8, 16, 0.42);
-      border-color: #4a73af;
+    main { padding: 24px; }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      align-items: flex-start;
+    }
+    .badge {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--panel);
     }
 
-    .btn:active { transform: translateY(0); }
-
-    .btn.primary {
-      border-color: #2bb8ef;
-      background: linear-gradient(120deg, #29b7ec, #4370ff);
-      color: #031124;
+    .screen-wrap {
+      position: relative;
+      min-height: 390px;
+      display: grid;
+    }
+    .screen {
+      grid-area: 1 / 1;
+      visibility: hidden;
+      opacity: 0;
+      transform: translateY(10px) scale(0.995);
+      pointer-events: none;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: linear-gradient(160deg, var(--panel), #0f1628);
+      padding: 18px;
+      transition: opacity 200ms ease, transform 220ms ease, visibility 0ms linear 220ms;
+      will-change: opacity, transform;
+    }
+    .screen.active {
+      visibility: visible;
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+      transition: opacity 180ms ease, transform 180ms ease;
     }
 
-    .btn.ok {
-      border-color: #4fd4a5;
-      background: linear-gradient(120deg, #1f8465, #2eb784);
-      color: #e7fff5;
+    .skeleton {
+      grid-area: 1 / 1;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: linear-gradient(160deg, var(--panel), #0f1628);
+      padding: 18px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 120ms ease;
+    }
+    .skeleton.active { opacity: 1; }
+    .s-row, .s-block {
+      border-radius: 10px;
+      background: linear-gradient(110deg, #17213c 25%, #243456 35%, #17213c 45%);
+      background-size: 300% 100%;
+      animation: shimmer 1.15s linear infinite;
+    }
+    .s-row { height: 18px; margin-bottom: 12px; }
+    .s-row.w40 { width: 40%; }
+    .s-row.w60 { width: 60%; }
+    .s-row.w80 { width: 80%; }
+    .s-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-top: 18px; }
+    .s-block { height: 110px; }
+    @keyframes shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+
+    h1 { font-size: 28px; margin: 0 0 6px; }
+    h2 { margin: 0 0 6px; font-size: 22px; }
+    p { margin: 0 0 12px; color: var(--muted); }
+    .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #0c1427;
+      padding: 12px;
+      transition: transform 140ms ease, border-color 140ms ease;
+    }
+    .card:hover { transform: translateY(-1px); border-color: #355181; }
+    .card h3 { margin: 0 0 8px; font-size: 16px; }
+    .small { font-size: 12px; color: var(--muted); }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn {
+      border: 1px solid #2c3d63;
+      background: #15213f;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 11px;
+      cursor: pointer;
+      transition: transform 120ms ease, filter 120ms ease, box-shadow 120ms ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn:hover { filter: brightness(1.07); }
+    .btn:active { transform: scale(0.98); }
+    .btn.primary { background: linear-gradient(90deg, #0ea5e9, #2563eb); border-color: #2563eb; }
+    .btn.ok { background: #153b2a; border-color: #1f7a4f; }
+    .btn.ghost { background: transparent; }
+    .btn-feedback {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, #ffffff66 0%, transparent 60%);
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.7);
+      transition: opacity 160ms ease, transform 220ms ease;
+    }
+    .btn.flash .btn-feedback { opacity: 0.45; transform: scale(1.2); }
+
+    .stat { font-size: 24px; font-weight: 700; }
+    .status-ok { color: var(--ok); }
+    .status-warn { color: var(--warn); }
+
+    .kbd-hint {
+      margin-top: 12px;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px dashed #33456f;
+      background: #0d162d;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    kbd {
+      border: 1px solid #3c4f7a;
+      border-bottom-width: 2px;
+      background: #101b34;
+      border-radius: 6px;
+      padding: 1px 6px;
+      color: #d7e3f8;
+      font-size: 11px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     }
 
-    @media (max-width: 960px) {
-      .app {
-        grid-template-columns: 1fr;
-        padding: var(--space-4);
-      }
+    .toast-wrap {
+      position: fixed;
+      right: 14px;
+      bottom: 14px;
+      display: grid;
+      gap: 8px;
+      z-index: 40;
+    }
+    .toast {
+      min-width: 220px;
+      max-width: 320px;
+      border: 1px solid #32508a;
+      background: #111d36;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 12px;
+      box-shadow: 0 12px 30px #00000050;
+      opacity: 0;
+      transform: translateY(8px);
+      animation: toast-in 220ms ease forwards;
+      font-size: 13px;
+    }
+    .toast.ok { border-color: #246446; background: #102920; }
+    .toast.warn { border-color: #7a6518; background: #2b2512; }
+    .toast.out { animation: toast-out 220ms ease forwards; }
+    @keyframes toast-in { to { opacity: 1; transform: translateY(0); } }
+    @keyframes toast-out { to { opacity: 0; transform: translateY(8px); } }
 
-      .sidebar {
-        position: static;
-        height: auto;
-      }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: #02061699;
+      backdrop-filter: blur(2px);
+      display: grid;
+      place-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease;
+      z-index: 50;
+    }
+    .modal-backdrop.open { opacity: 1; pointer-events: auto; }
+    .modal {
+      width: min(560px, calc(100vw - 30px));
+      border: 1px solid #355286;
+      border-radius: 14px;
+      background: linear-gradient(170deg, #0f1a31, #0b1224);
+      box-shadow: 0 22px 60px #00000099;
+      padding: 16px;
+      transform: translateY(10px) scale(0.98);
+      transition: transform 200ms ease;
+    }
+    .modal-backdrop.open .modal { transform: translateY(0) scale(1); }
+    .modal h3 { margin: 0 0 6px; }
+    .modal ul { margin: 10px 0 14px 20px; color: var(--muted); }
+
+    :focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    @media (max-width: 850px) {
+      .app { grid-template-columns: 1fr; }
+      aside { position: static; height: auto; }
+      .screen-wrap { min-height: 430px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
     }
   </style>
 </head>
 <body>
   <div class="app">
-    <aside class="sidebar">
-      <div class="brand">
-        <h1>OpenClaw POS Prototype</h1>
-        <p>Premium clickable shell for cross-module demo walkthroughs.</p>
-      </div>
-
+    <aside>
+      <div class="logo">OpenClaw POS Prototype</div>
+      <div class="sub">Clickable shell for cross-module demo</div>
       <div class="nav" id="nav"></div>
-      <p class="tip">Tip: use this shell in stakeholder demos to walk through front-office and back-office flow continuity.</p>
+      <div class="kbd-hint">
+        Quick nav: <kbd>1</kbd>-<kbd>6</kbd> screens • <kbd>↑</kbd>/<kbd>↓</kbd> sidebar • <kbd>?</kbd> help
+      </div>
+      <p class="small" style="margin-top:12px;">Tip: use this in stakeholder demos to walk end-to-end operational flow.</p>
     </aside>
 
-    <main class="main">
-      <header class="topbar">
+    <main>
+      <div class="topbar">
         <div>
-          <h2 class="headline" id="screenTitle">Flow</h2>
-          <p class="subtitle" id="screenDesc">Prototype navigation</p>
+          <h1 id="screenTitle">Flow</h1>
+          <p id="screenDesc">Prototype navigation</p>
         </div>
-        <div class="pill-row">
-          <span class="pill"><span class="dot"></span>Branch: KHI-01</span>
-          <span class="pill">Business Date: 2026-02-27</span>
-          <span class="pill">Mode: Demo Offline/Online</span>
+        <div class="row">
+          <span class="badge">Branch: KHI-01</span>
+          <span class="badge">Business Date: 2026-02-27</span>
+          <span class="badge">Mode: Demo Offline/Online</span>
+          <button class="btn ghost" id="shortcutsBtn">Keyboard Shortcuts</button>
         </div>
-      </header>
+      </div>
 
-      <section class="screen" id="checkout">
-        <h2 class="section-title">POS Checkout</h2>
-        <p class="section-desc">Scan items, apply pricing/tax policy, capture payments, and issue receipt without interrupting queue flow.</p>
-        <div class="grid">
-          <article class="card"><h3>Basket</h3><div class="label">3 items • subtotal PKR 4,250 • tax inclusive</div></article>
-          <article class="card"><h3>Payment Split</h3><div class="label">Cash PKR 2,000 + Card PKR 2,250</div></article>
-          <article class="card"><h3>Sync Status</h3><div class="label state-success">Queued safely for sync outbox</div></article>
-          <article class="card"><h3>Queue Health</h3><div class="kpi state-success">A+</div><div class="label">Avg service time: 1m 47s</div></article>
+      <div class="screen-wrap" id="screenWrap">
+        <div class="skeleton" id="skeleton" aria-hidden="true">
+          <div class="s-row w40"></div>
+          <div class="s-row w80"></div>
+          <div class="s-row w60"></div>
+          <div class="s-grid">
+            <div class="s-block"></div>
+            <div class="s-block"></div>
+            <div class="s-block"></div>
+          </div>
         </div>
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead><tr><th>SKU</th><th>Description</th><th>Qty</th><th>Amount</th></tr></thead>
-            <tbody>
-              <tr><td>SKU-CH-101</td><td>Chocolate Spread 500g</td><td>1</td><td>PKR 1,650</td></tr>
-              <tr><td>SKU-MK-087</td><td>Fresh Milk 1L</td><td>2</td><td>PKR 1,200</td></tr>
-              <tr><td>SKU-BR-043</td><td>Whole Wheat Bread</td><td>1</td><td>PKR 1,400</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="actions">
-          <button class="btn primary" data-go="refunds">Issue Return / Refund</button>
-          <button class="btn" data-go="till-close">Move to Till Close</button>
-        </div>
-      </section>
 
-      <section class="screen" id="refunds">
-        <h2 class="section-title">Returns / Refunds</h2>
-        <p class="section-desc">Find receipt, validate return lines, compute refund, and reverse inventory with traceable audit notes.</p>
-        <div class="grid">
-          <article class="card"><h3>Original Receipt</h3><div class="label">#KHI01-T2-100483 • 2026-02-27 14:09</div></article>
-          <article class="card"><h3>Return Lines</h3><div class="label">1 x SKU-CH-101 (defect) • restock: yes</div></article>
-          <article class="card"><h3>Refund Method</h3><div class="label">Original card route (same-day)</div></article>
-          <article class="card"><h3>Risk Flag</h3><div class="kpi state-warning">Low</div><div class="label">Customer return profile within limits</div></article>
-        </div>
-        <div class="actions">
-          <button class="btn ok" data-go="checkout">Back to Checkout</button>
-          <button class="btn primary" data-go="till-close">Finalize & Go Till Close</button>
-        </div>
-      </section>
+        <section class="screen" id="checkout">
+          <h2>POS Checkout</h2>
+          <p>Scan items, apply pricing/tax policy, capture payments, and issue receipt.</p>
+          <div class="grid">
+            <div class="card"><h3>Basket</h3><div class="small">3 items • subtotal PKR 4,250 • tax inclusive</div></div>
+            <div class="card"><h3>Payment Split</h3><div class="small">Cash PKR 2,000 + Card PKR 2,250</div></div>
+            <div class="card"><h3>Sync Status</h3><div class="small status-ok">Queued safely for sync outbox</div></div>
+          </div>
+          <div class="row" style="margin-top:12px;">
+            <button class="btn primary" data-go="refunds">Issue Return / Refund</button>
+            <button class="btn" data-go="till-close">Move to Till Close</button>
+          </div>
+        </section>
 
-      <section class="screen" id="till-close">
-        <h2 class="section-title">Till Close</h2>
-        <p class="section-desc">Reconcile expected vs counted cash, capture drops/variance reasons, and submit terminal close packet.</p>
-        <div class="grid">
-          <article class="card"><h3>Expected Cash</h3><div class="kpi">PKR 128,200</div></article>
-          <article class="card"><h3>Counted Cash</h3><div class="kpi">PKR 127,900</div></article>
-          <article class="card"><h3>Variance</h3><div class="kpi state-warning">-300</div><div class="label">Reason: petty cash correction</div></article>
-          <article class="card"><h3>Supervisor Signoff</h3><div class="label state-success">Captured with note ID #SUP-411</div></article>
-        </div>
-        <div class="actions">
-          <button class="btn primary" data-go="day-close">Submit Till Close</button>
-        </div>
-      </section>
+        <section class="screen" id="refunds">
+          <h2>Returns / Refunds</h2>
+          <p>Find receipt, validate return lines, compute refund, and reverse inventory.</p>
+          <div class="grid">
+            <div class="card"><h3>Original Receipt</h3><div class="small">#KHI01-T2-100483 • 2026-02-27 14:09</div></div>
+            <div class="card"><h3>Return Lines</h3><div class="small">1 x SKU-CH-101 (defect) • restock: yes</div></div>
+            <div class="card"><h3>Refund Method</h3><div class="small">Original card route (same-day)</div></div>
+          </div>
+          <div class="row" style="margin-top:12px;">
+            <button class="btn ok" data-go="checkout">Back to Checkout</button>
+            <button class="btn primary" data-go="till-close">Finalize & Go Till Close</button>
+          </div>
+        </section>
 
-      <section class="screen" id="day-close">
-        <h2 class="section-title">Day-Close Dashboard</h2>
-        <p class="section-desc">Management summary of sales, refunds, till variances, and posting readiness for finance handoff.</p>
-        <div class="grid">
-          <article class="card"><h3>Net Sales</h3><div class="kpi">PKR 2.83M</div></article>
-          <article class="card"><h3>Refunds</h3><div class="kpi">PKR 84K</div></article>
-          <article class="card"><h3>Tills Closed</h3><div class="kpi state-success">6 / 6</div></article>
-          <article class="card"><h3>Branch Reconciliation</h3><div class="label state-success">Ready for FinOps posting</div></article>
-        </div>
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead><tr><th>Metric</th><th>Status</th><th>Owner</th><th>Last Update</th></tr></thead>
-            <tbody>
-              <tr><td>Sales Ledger Sync</td><td class="state-success">Completed</td><td>Finance Ops</td><td>18:12</td></tr>
-              <tr><td>Inventory Delta Review</td><td class="state-success">Balanced</td><td>Store Ops</td><td>18:19</td></tr>
-              <tr><td>Variance Exception Log</td><td class="state-warning">1 pending note</td><td>Branch Manager</td><td>18:22</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="actions">
-          <button class="btn" data-go="procurement">Create Purchase Order</button>
-          <button class="btn primary" data-go="payroll">Open Payroll Run</button>
-        </div>
-      </section>
+        <section class="screen" id="till-close">
+          <h2>Till Close</h2>
+          <p>Reconcile expected vs counted cash, capture drops/variance reasons, submit close.</p>
+          <div class="grid">
+            <div class="card"><h3>Expected Cash</h3><div class="stat">PKR 128,200</div></div>
+            <div class="card"><h3>Counted Cash</h3><div class="stat">PKR 127,900</div></div>
+            <div class="card"><h3>Variance</h3><div class="stat status-warn">-300</div><div class="small">Reason: petty cash correction</div></div>
+          </div>
+          <div class="row" style="margin-top:12px;">
+            <button class="btn primary" data-go="day-close">Submit Till Close</button>
+          </div>
+        </section>
 
-      <section class="screen" id="procurement">
-        <h2 class="section-title">Procurement — Purchase Order</h2>
-        <p class="section-desc">Raise branch replenishment PO linked to approved suppliers and warehouse targets with delivery confidence.</p>
-        <div class="grid">
-          <article class="card"><h3>Supplier</h3><div class="label">Global Foods Distributor Ltd.</div></article>
-          <article class="card"><h3>PO Value</h3><div class="kpi">PKR 1.12M</div></article>
-          <article class="card"><h3>ETA</h3><div class="label">2026-03-02 • WH-KHI-CENTRAL</div></article>
-          <article class="card"><h3>Fill Rate Forecast</h3><div class="kpi state-success">97%</div><div class="label">Based on previous 30-day supplier SLA</div></article>
-        </div>
-        <div class="actions">
-          <button class="btn primary" data-go="day-close">Back to Day-Close</button>
-          <button class="btn" data-go="payroll">Continue to Payroll</button>
-        </div>
-      </section>
+        <section class="screen" id="day-close">
+          <h2>Day-Close Dashboard</h2>
+          <p>Management summary of sales, refunds, till variances, and posting readiness.</p>
+          <div class="grid">
+            <div class="card"><h3>Net Sales</h3><div class="stat">PKR 2.83M</div></div>
+            <div class="card"><h3>Refunds</h3><div class="stat">PKR 84K</div></div>
+            <div class="card"><h3>Tills Closed</h3><div class="stat status-ok">6 / 6</div></div>
+            <div class="card"><h3>Branch Reconciliation</h3><div class="small status-ok">Ready for FinOps posting</div></div>
+          </div>
+          <div class="row" style="margin-top:12px;">
+            <button class="btn" data-go="procurement">Create Purchase Order</button>
+            <button class="btn primary" data-go="payroll">Open Payroll Run</button>
+          </div>
+        </section>
 
-      <section class="screen" id="payroll">
-        <h2 class="section-title">Payroll Run</h2>
-        <p class="section-desc">Lock attendance inputs, calculate gross-to-net, and queue payroll batch approvals across departments.</p>
-        <div class="grid">
-          <article class="card"><h3>Pay Cycle</h3><div class="label">Monthly • Feb 2026</div></article>
-          <article class="card"><h3>Employees</h3><div class="kpi">186</div></article>
-          <article class="card"><h3>Net Pay</h3><div class="kpi">PKR 19.4M</div></article>
-          <article class="card"><h3>Status</h3><div class="label state-success">Draft generated • Awaiting CFO approval</div></article>
-        </div>
-        <div class="actions">
-          <button class="btn primary" data-go="checkout">Restart Demo from Checkout</button>
-        </div>
-      </section>
+        <section class="screen" id="procurement">
+          <h2>Procurement — Purchase Order</h2>
+          <p>Raise branch replenishment PO linked to approved supplier and warehouse targets.</p>
+          <div class="grid">
+            <div class="card"><h3>Supplier</h3><div class="small">Global Foods Distributor Ltd.</div></div>
+            <div class="card"><h3>PO Value</h3><div class="stat">PKR 1.12M</div></div>
+            <div class="card"><h3>ETA</h3><div class="small">2026-03-02 • WH-KHI-CENTRAL</div></div>
+          </div>
+          <div class="row" style="margin-top:12px;">
+            <button class="btn primary" data-go="day-close">Back to Day-Close</button>
+            <button class="btn" data-go="payroll">Continue to Payroll</button>
+          </div>
+        </section>
+
+        <section class="screen" id="payroll">
+          <h2>Payroll Run</h2>
+          <p>Lock attendance inputs, calculate gross-to-net, and queue payroll batch approvals.</p>
+          <div class="grid">
+            <div class="card"><h3>Pay Cycle</h3><div class="small">Monthly • Feb 2026</div></div>
+            <div class="card"><h3>Employees</h3><div class="stat">186</div></div>
+            <div class="card"><h3>Net Pay</h3><div class="stat">PKR 19.4M</div></div>
+            <div class="card"><h3>Status</h3><div class="small status-ok">Draft generated • Awaiting CFO approval</div></div>
+          </div>
+          <div class="row" style="margin-top:12px;">
+            <button class="btn primary" data-go="checkout">Restart Demo from Checkout</button>
+          </div>
+        </section>
+      </div>
     </main>
+  </div>
+
+  <div class="toast-wrap" id="toasts" aria-live="polite" aria-atomic="true"></div>
+
+  <div class="modal-backdrop" id="shortcutsModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="kbdTitle">
+      <h3 id="kbdTitle">Keyboard navigation</h3>
+      <p class="small">Fast demo flow controls (no mouse needed):</p>
+      <ul>
+        <li><kbd>1</kbd>..<kbd>6</kbd> jump directly to a section</li>
+        <li><kbd>↑</kbd> / <kbd>↓</kbd> move between sidebar sections</li>
+        <li><kbd>Enter</kbd> trigger selected sidebar section</li>
+        <li><kbd>?</kbd> open shortcuts modal</li>
+        <li><kbd>Esc</kbd> close modal</li>
+      </ul>
+      <div class="row">
+        <button class="btn primary" id="modalCloseBtn">Got it</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -486,32 +423,157 @@
     const nav = document.getElementById('nav');
     const title = document.getElementById('screenTitle');
     const desc = document.getElementById('screenDesc');
+    const skeleton = document.getElementById('skeleton');
+    const toasts = document.getElementById('toasts');
+    const shortcutsBtn = document.getElementById('shortcutsBtn');
+    const shortcutsModal = document.getElementById('shortcutsModal');
+    const modalCloseBtn = document.getElementById('modalCloseBtn');
 
-    screens.forEach((s) => {
+    let currentId = null;
+    let navFocusIndex = 0;
+
+    function withButtonFeedback(el) {
+      if (!el || el.querySelector('.btn-feedback')) return;
+      const fx = document.createElement('span');
+      fx.className = 'btn-feedback';
+      el.appendChild(fx);
+      el.addEventListener('click', () => {
+        el.classList.add('flash');
+        setTimeout(() => el.classList.remove('flash'), 170);
+      });
+    }
+
+    function showToast(message, kind = 'info') {
+      const toast = document.createElement('div');
+      toast.className = `toast ${kind}`;
+      toast.textContent = message;
+      toasts.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.add('out');
+        setTimeout(() => toast.remove(), 220);
+      }, 1900);
+    }
+
+    function getScreenIndex(id) {
+      return screens.findIndex((s) => s.id === id);
+    }
+
+    function openModal() {
+      shortcutsModal.classList.add('open');
+      shortcutsModal.setAttribute('aria-hidden', 'false');
+      modalCloseBtn.focus();
+    }
+
+    function closeModal() {
+      shortcutsModal.classList.remove('open');
+      shortcutsModal.setAttribute('aria-hidden', 'true');
+      shortcutsBtn.focus();
+    }
+
+    screens.forEach((s, idx) => {
       const btn = document.createElement('button');
-      btn.textContent = s.label;
+      btn.textContent = `${idx + 1}. ${s.label}`;
       btn.dataset.target = s.id;
-      btn.addEventListener('click', () => go(s.id));
+      btn.addEventListener('click', () => go(s.id, { showLoader: true, announce: true }));
+      withButtonFeedback(btn);
       nav.appendChild(btn);
     });
 
-    function go(id) {
+    document.querySelectorAll('.btn').forEach(withButtonFeedback);
+
+    function applyScreen(id) {
       document.querySelectorAll('.screen').forEach((el) => el.classList.toggle('active', el.id === id));
-      document.querySelectorAll('.nav button').forEach((el) => el.classList.toggle('active', el.dataset.target === id));
+      document.querySelectorAll('.nav button').forEach((el, idx) => {
+        const active = el.dataset.target === id;
+        el.classList.toggle('active', active);
+        if (active) navFocusIndex = idx;
+      });
+
       const current = screens.find((s) => s.id === id);
       if (current) {
         title.textContent = current.label;
         desc.textContent = current.desc;
       }
+      currentId = id;
       history.replaceState(null, '', `#${id}`);
     }
 
+    function go(id, opts = {}) {
+      const { showLoader = false, announce = false } = opts;
+      if (!screens.some((s) => s.id === id) || id === currentId) return;
+
+      if (showLoader) {
+        skeleton.classList.add('active');
+        setTimeout(() => {
+          skeleton.classList.remove('active');
+          applyScreen(id);
+        }, 220);
+      } else {
+        applyScreen(id);
+      }
+
+      if (announce) {
+        const s = screens.find((x) => x.id === id);
+        showToast(`Opened: ${s.label}`, 'ok');
+      }
+    }
+
     document.querySelectorAll('[data-go]').forEach((btn) => {
-      btn.addEventListener('click', () => go(btn.dataset.go));
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.go;
+        const targetLabel = screens.find((s) => s.id === target)?.label || target;
+        showToast(`Action complete → ${targetLabel}`);
+        go(target, { showLoader: true, announce: false });
+      });
+    });
+
+    shortcutsBtn.addEventListener('click', openModal);
+    modalCloseBtn.addEventListener('click', closeModal);
+    shortcutsModal.addEventListener('click', (e) => {
+      if (e.target === shortcutsModal) closeModal();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+        e.preventDefault();
+        openModal();
+        return;
+      }
+
+      if (e.key === 'Escape' && shortcutsModal.classList.contains('open')) {
+        e.preventDefault();
+        closeModal();
+        return;
+      }
+
+      if (shortcutsModal.classList.contains('open')) return;
+
+      if (/^[1-6]$/.test(e.key)) {
+        const idx = Number(e.key) - 1;
+        const target = screens[idx];
+        if (target) go(target.id, { showLoader: true, announce: true });
+        return;
+      }
+
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const total = screens.length;
+        navFocusIndex = e.key === 'ArrowDown'
+          ? (navFocusIndex + 1) % total
+          : (navFocusIndex - 1 + total) % total;
+        const btn = nav.querySelectorAll('button')[navFocusIndex];
+        if (btn) btn.focus();
+        return;
+      }
+
+      if (e.key === 'Enter' && document.activeElement?.closest('#nav')) {
+        document.activeElement.click();
+      }
     });
 
     const start = location.hash.replace('#', '');
-    go(screens.some((s) => s.id === start) ? start : 'checkout');
+    applyScreen(screens.some((s) => s.id === start) ? start : 'checkout');
+    showToast('Demo shell ready. Press ? for shortcuts.', 'ok');
   </script>
 </body>
 </html>
