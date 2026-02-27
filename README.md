@@ -102,6 +102,9 @@ Also planned/expanding:
 - `GET/POST /v1/sync-outbox`
 - `GET/POST /v1/sync-conflicts`
 - `GET/POST /v1/app-config`
+- `GET/POST /v1/sales-receipts`
+- `GET/POST /v1/inventory-movements`
+- `GET/POST /v1/branch-reconciliations`
 - `POST /v1/seed/demo-branch`
 - `POST /v1/connectors/shopify/order-webhook`
 - `POST /v1/connectors/amazon/order-webhook`
