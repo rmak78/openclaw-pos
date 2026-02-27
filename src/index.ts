@@ -67,6 +67,9 @@ export default {
           "GET/POST /v1/variance-reasons",
           "GET/POST /v1/inventory-movements",
           "GET/POST /v1/branch-reconciliations",
+          "GET/POST /v1/suppliers",
+          "GET/POST /v1/purchase-orders",
+          "GET/POST /v1/goods-receipts",
           "POST /v1/seed/demo-branch",
           "POST /v1/connectors/shopify/order-webhook",
           "POST /v1/connectors/amazon/order-webhook"
@@ -87,7 +90,7 @@ export default {
       return json({
         ok: true,
         api: "v1",
-        version: "0.4.0",
+        version: "0.5.0",
         deployedOn: "cloudflare-workers",
         db: "d1:openclaw_pos",
       });
@@ -100,7 +103,8 @@ export default {
           core: ["org-units", "employees", "orders", "shipments"],
           commerce: ["channels", "channel-accounts", "shopify-webhook", "amazon-webhook"],
           newToday: ["customers", "inventory", "pricing", "tax", "payments", "offline-sync"],
-          financeOps: ["sales-posting", "inventory-movements", "branch-reconciliation", "payment-split", "day-close-summary", "till-session", "cash-drop", "variance-reason-codes"]
+          financeOps: ["sales-posting", "inventory-movements", "branch-reconciliation", "payment-split", "day-close-summary", "till-session", "cash-drop", "variance-reason-codes"],
+          procurement: ["suppliers", "purchase-orders", "goods-receipts", "grn"]
         }
       });
     }
@@ -129,6 +133,9 @@ export default {
       "/v1/variance-reasons",
       "/v1/inventory-movements",
       "/v1/branch-reconciliations",
+      "/v1/suppliers",
+      "/v1/purchase-orders",
+      "/v1/goods-receipts",
       "/v1/seed/demo-branch",
       "/v1/connectors/shopify/order-webhook",
       "/v1/connectors/amazon/order-webhook",
@@ -878,6 +885,129 @@ export default {
           .run();
 
         return json({ ok: true, id: body.id, variance_amount: variance, status }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/pay-cycles" && method === "GET") {
+      const { results } = await env.openclaw_pos
+        .prepare(`SELECT * FROM pay_cycles ORDER BY cycle_start DESC LIMIT 200`)
+        .all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/pay-cycles" && method === "POST") {
+      const body = await readJson<{
+        id?: string; cycle_code?: string; country_code?: string; legal_entity_id?: string | null;
+        cycle_type?: string; cycle_start?: string; cycle_end?: string; payday?: string; status?: string;
+      }>(request);
+
+      if (!body?.id || !body.cycle_code || !body.country_code || !body.cycle_type || !body.cycle_start || !body.cycle_end || !body.payday) {
+        return badRequest("Required fields: id, cycle_code, country_code, cycle_type, cycle_start, cycle_end, payday");
+      }
+
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO pay_cycles (id, cycle_code, country_code, legal_entity_id, cycle_type, cycle_start, cycle_end, payday, status, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+          .bind(
+            body.id,
+            body.cycle_code,
+            body.country_code,
+            body.legal_entity_id ?? null,
+            body.cycle_type,
+            body.cycle_start,
+            body.cycle_end,
+            body.payday,
+            body.status ?? "draft",
+            nowIso(),
+            nowIso()
+          )
+          .run();
+
+        return json({ ok: true, id: body.id }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/pay-components" && method === "GET") {
+      const { results } = await env.openclaw_pos
+        .prepare(`SELECT * FROM pay_components ORDER BY created_at DESC LIMIT 300`)
+        .all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/pay-components" && method === "POST") {
+      const body = await readJson<{
+        id?: string; component_code?: string; component_name?: string; component_type?: string;
+        calc_mode?: string; taxable_default?: number; pensionable_default?: number; is_active?: number;
+      }>(request);
+
+      if (!body?.id || !body.component_code || !body.component_name || !body.component_type || !body.calc_mode) {
+        return badRequest("Required fields: id, component_code, component_name, component_type, calc_mode");
+      }
+
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO pay_components (id, component_code, component_name, component_type, calc_mode, taxable_default, pensionable_default, is_active, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+          .bind(
+            body.id,
+            body.component_code,
+            body.component_name,
+            body.component_type,
+            body.calc_mode,
+            body.taxable_default ?? 1,
+            body.pensionable_default ?? 0,
+            body.is_active ?? 1,
+            nowIso(),
+            nowIso()
+          )
+          .run();
+
+        return json({ ok: true, id: body.id }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/payroll-runs" && method === "GET") {
+      const { results } = await env.openclaw_pos
+        .prepare(`SELECT * FROM payroll_runs ORDER BY created_at DESC LIMIT 200`)
+        .all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/payroll-runs" && method === "POST") {
+      const body = await readJson<{
+        id?: string; pay_cycle_id?: string; branch_id?: string | null; run_code?: string;
+        run_type?: string; status?: string; notes?: string | null;
+      }>(request);
+
+      if (!body?.id || !body.pay_cycle_id || !body.run_code || !body.run_type) {
+        return badRequest("Required fields: id, pay_cycle_id, run_code, run_type");
+      }
+
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO payroll_runs (id, pay_cycle_id, branch_id, run_code, run_type, status, notes, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+          .bind(
+            body.id,
+            body.pay_cycle_id,
+            body.branch_id ?? null,
+            body.run_code,
+            body.run_type,
+            body.status ?? "draft",
+            body.notes ?? null,
+            nowIso(),
+            nowIso()
+          )
+          .run();
+
+        return json({ ok: true, id: body.id }, 201);
       } catch (e) {
         return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
       }
