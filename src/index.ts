@@ -70,6 +70,15 @@ export default {
           "GET/POST /v1/variance-reasons",
           "GET/POST /v1/inventory-movements",
           "GET/POST /v1/branch-reconciliations",
+          "GET/POST /v1/pay-cycles",
+          "GET/POST /v1/pay-components",
+          "GET/POST /v1/payroll-runs",
+          "GET/POST /v1/payroll-run-lines",
+          "POST /v1/payroll-runs/calculate-preview",
+          "POST /v1/payroll-runs/approve",
+          "POST /v1/payroll-runs/mark-processed",
+          "GET /v1/payroll-runs/totals",
+          "GET/POST /v1/payroll-run-audit-logs",
           "GET/POST /v1/suppliers",
           "GET/POST /v1/purchase-orders",
           "POST /v1/purchase-orders/transition",
@@ -109,6 +118,7 @@ export default {
           commerce: ["channels", "channel-accounts", "shopify-webhook", "amazon-webhook"],
           newToday: ["customers", "inventory", "pricing", "tax", "payments", "offline-sync"],
           financeOps: ["sales-posting", "inventory-movements", "branch-reconciliation", "payment-split", "day-close-summary", "till-session", "cash-drop", "variance-reason-codes", "sales-returns", "refunds"],
+          hris: ["pay-cycles", "pay-components", "payroll-runs", "payroll-run-lines", "payroll-preview", "payroll-approvals", "payroll-totals", "payroll-audit-log"],
           procurement: ["suppliers", "purchase-orders", "po-lifecycle", "po-status-events", "purchase-order-summary", "goods-receipts", "grn"]
         }
       });
@@ -141,6 +151,14 @@ export default {
       "/v1/variance-reasons",
       "/v1/inventory-movements",
       "/v1/branch-reconciliations",
+      "/v1/pay-cycles",
+      "/v1/pay-components",
+      "/v1/payroll-runs",
+      "/v1/payroll-run-lines",
+      "/v1/payroll-runs/calculate-preview",
+      "/v1/payroll-runs/approve",
+      "/v1/payroll-runs/mark-processed",
+      "/v1/payroll-run-audit-logs",
       "/v1/suppliers",
       "/v1/purchase-orders",
       "/v1/purchase-orders/transition",
@@ -1180,6 +1198,212 @@ export default {
             body.status ?? "draft",
             body.notes ?? null,
             nowIso(),
+            nowIso()
+          )
+          .run();
+
+        return json({ ok: true, id: body.id }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/payroll-run-lines" && method === "GET") {
+      const payrollRunId = url.searchParams.get("payroll_run_id");
+      const statement = payrollRunId
+        ? env.openclaw_pos.prepare(`SELECT * FROM payroll_run_lines WHERE payroll_run_id = ? ORDER BY created_at DESC LIMIT 500`).bind(payrollRunId)
+        : env.openclaw_pos.prepare(`SELECT * FROM payroll_run_lines ORDER BY created_at DESC LIMIT 500`);
+      const { results } = await statement.all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/payroll-run-lines" && method === "POST") {
+      const body = await readJson<{
+        id?: string; payroll_run_id?: string; employee_id?: string; component_code?: string; component_type?: string;
+        calc_mode?: string; input_value?: number | null; computed_amount?: number; currency_code?: string; notes?: string | null;
+      }>(request);
+
+      if (!body?.id || !body.payroll_run_id || !body.employee_id || !body.component_code || !body.component_type || !body.calc_mode || body.computed_amount === undefined || !body.currency_code) {
+        return badRequest("Required fields: id, payroll_run_id, employee_id, component_code, component_type, calc_mode, computed_amount, currency_code");
+      }
+
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO payroll_run_lines (id, payroll_run_id, employee_id, component_code, component_type, calc_mode, input_value, computed_amount, currency_code, notes, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+          .bind(
+            body.id,
+            body.payroll_run_id,
+            body.employee_id,
+            body.component_code,
+            body.component_type,
+            body.calc_mode,
+            body.input_value ?? null,
+            body.computed_amount,
+            body.currency_code,
+            body.notes ?? null,
+            nowIso(),
+            nowIso()
+          )
+          .run();
+
+        return json({ ok: true, id: body.id }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/payroll-runs/calculate-preview" && method === "POST") {
+      const body = await readJson<{ payroll_run_id?: string }>(request);
+      if (!body?.payroll_run_id) {
+        return badRequest("Required field: payroll_run_id");
+      }
+
+      const { results } = await env.openclaw_pos
+        .prepare(`SELECT component_type, computed_amount FROM payroll_run_lines WHERE payroll_run_id = ?`)
+        .bind(body.payroll_run_id)
+        .all<{ component_type: string; computed_amount: number }>();
+
+      const totals = { earnings: 0, deductions: 0, employer_cost: 0, net_pay: 0 };
+      for (const line of results ?? []) {
+        const amount = Number(line.computed_amount ?? 0);
+        if (line.component_type === "earning") totals.earnings += amount;
+        if (line.component_type === "deduction") totals.deductions += amount;
+        if (line.component_type === "employer_cost") totals.employer_cost += amount;
+      }
+      totals.net_pay = totals.earnings - totals.deductions;
+
+      return json({ ok: true, payroll_run_id: body.payroll_run_id, totals });
+    }
+
+    if (path === "/v1/payroll-runs/approve" && method === "POST") {
+      const body = await readJson<{ payroll_run_id?: string; actor_employee_id?: string | null; notes?: string | null }>(request);
+      if (!body?.payroll_run_id) {
+        return badRequest("Required field: payroll_run_id");
+      }
+
+      const run = await env.openclaw_pos
+        .prepare(`SELECT id, status FROM payroll_runs WHERE id = ?`)
+        .bind(body.payroll_run_id)
+        .first<{ id: string; status: string }>();
+
+      if (!run?.id) return json({ ok: false, error: "Payroll run not found" }, 404);
+      if (!["draft", "processing", "review"].includes(run.status)) {
+        return badRequest(`Cannot approve payroll run from status: ${run.status}`);
+      }
+
+      const eventId = `${body.payroll_run_id}-approved-${Date.now()}`;
+      const approvedAt = nowIso();
+
+      await env.openclaw_pos.batch([
+        env.openclaw_pos
+          .prepare(`UPDATE payroll_runs SET status = 'approved', approved_at = ?, approved_by_employee_id = ?, updated_at = ? WHERE id = ?`)
+          .bind(approvedAt, body.actor_employee_id ?? null, approvedAt, body.payroll_run_id),
+        env.openclaw_pos
+          .prepare(`INSERT INTO payroll_run_audit_logs (id, payroll_run_id, event_type, from_status, to_status, actor_employee_id, notes, payload_json, created_at)
+                    VALUES (?, ?, 'status_transition', ?, 'approved', ?, ?, ?, ?)`)
+          .bind(eventId, body.payroll_run_id, run.status, body.actor_employee_id ?? null, body.notes ?? null, JSON.stringify({ transition: "approve" }), approvedAt)
+      ]);
+
+      return json({ ok: true, payroll_run_id: body.payroll_run_id, from_status: run.status, to_status: "approved", approved_at: approvedAt });
+    }
+
+    if (path === "/v1/payroll-runs/mark-processed" && method === "POST") {
+      const body = await readJson<{ payroll_run_id?: string; actor_employee_id?: string | null; notes?: string | null }>(request);
+      if (!body?.payroll_run_id) {
+        return badRequest("Required field: payroll_run_id");
+      }
+
+      const run = await env.openclaw_pos
+        .prepare(`SELECT id, status FROM payroll_runs WHERE id = ?`)
+        .bind(body.payroll_run_id)
+        .first<{ id: string; status: string }>();
+
+      if (!run?.id) return json({ ok: false, error: "Payroll run not found" }, 404);
+      if (run.status !== "approved") {
+        return badRequest(`Cannot mark payroll run as processed from status: ${run.status}`);
+      }
+
+      const eventId = `${body.payroll_run_id}-processed-${Date.now()}`;
+      const processedAt = nowIso();
+
+      await env.openclaw_pos.batch([
+        env.openclaw_pos
+          .prepare(`UPDATE payroll_runs SET status = 'processed', processed_at = ?, processed_by_employee_id = ?, updated_at = ? WHERE id = ?`)
+          .bind(processedAt, body.actor_employee_id ?? null, processedAt, body.payroll_run_id),
+        env.openclaw_pos
+          .prepare(`INSERT INTO payroll_run_audit_logs (id, payroll_run_id, event_type, from_status, to_status, actor_employee_id, notes, payload_json, created_at)
+                    VALUES (?, ?, 'status_transition', ?, 'processed', ?, ?, ?, ?)`)
+          .bind(eventId, body.payroll_run_id, run.status, body.actor_employee_id ?? null, body.notes ?? null, JSON.stringify({ transition: "mark-processed" }), processedAt)
+      ]);
+
+      return json({ ok: true, payroll_run_id: body.payroll_run_id, from_status: run.status, to_status: "processed", processed_at: processedAt });
+    }
+
+    if (path === "/v1/payroll-runs/totals" && method === "GET") {
+      const payrollRunId = url.searchParams.get("payroll_run_id");
+      if (!payrollRunId) {
+        return badRequest("Query param required: payroll_run_id");
+      }
+
+      const totals = await env.openclaw_pos
+        .prepare(`SELECT
+                    COALESCE(SUM(CASE WHEN component_type = 'earning' THEN computed_amount END), 0) AS earnings,
+                    COALESCE(SUM(CASE WHEN component_type = 'deduction' THEN computed_amount END), 0) AS deductions,
+                    COALESCE(SUM(CASE WHEN component_type = 'employer_cost' THEN computed_amount END), 0) AS employer_cost
+                  FROM payroll_run_lines
+                  WHERE payroll_run_id = ?`)
+        .bind(payrollRunId)
+        .first<{ earnings: number; deductions: number; employer_cost: number }>();
+
+      const earnings = Number(totals?.earnings ?? 0);
+      const deductions = Number(totals?.deductions ?? 0);
+      const employer_cost = Number(totals?.employer_cost ?? 0);
+
+      return json({
+        ok: true,
+        payroll_run_id: payrollRunId,
+        totals: {
+          earnings,
+          deductions,
+          employer_cost,
+          net_pay: earnings - deductions,
+        },
+      });
+    }
+
+    if (path === "/v1/payroll-run-audit-logs" && method === "GET") {
+      const payrollRunId = url.searchParams.get("payroll_run_id");
+      const statement = payrollRunId
+        ? env.openclaw_pos.prepare(`SELECT * FROM payroll_run_audit_logs WHERE payroll_run_id = ? ORDER BY created_at DESC LIMIT 500`).bind(payrollRunId)
+        : env.openclaw_pos.prepare(`SELECT * FROM payroll_run_audit_logs ORDER BY created_at DESC LIMIT 500`);
+      const { results } = await statement.all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/payroll-run-audit-logs" && method === "POST") {
+      const body = await readJson<{
+        id?: string; payroll_run_id?: string; event_type?: string; from_status?: string | null; to_status?: string | null;
+        actor_employee_id?: string | null; notes?: string | null; payload_json?: string | null;
+      }>(request);
+
+      if (!body?.id || !body.payroll_run_id || !body.event_type) {
+        return badRequest("Required fields: id, payroll_run_id, event_type");
+      }
+
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO payroll_run_audit_logs (id, payroll_run_id, event_type, from_status, to_status, actor_employee_id, notes, payload_json, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+          .bind(
+            body.id,
+            body.payroll_run_id,
+            body.event_type,
+            body.from_status ?? null,
+            body.to_status ?? null,
+            body.actor_employee_id ?? null,
+            body.notes ?? null,
+            body.payload_json ?? null,
             nowIso()
           )
           .run();
