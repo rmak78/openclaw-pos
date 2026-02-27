@@ -61,6 +61,10 @@ export default {
           "GET/POST /v1/sales-receipt-lines",
           "GET/POST /v1/sales-receipt-payments",
           "GET /v1/day-close-summary",
+          "GET/POST /v1/till-sessions",
+          "POST /v1/till-sessions/close",
+          "GET/POST /v1/cash-drops",
+          "GET/POST /v1/variance-reasons",
           "GET/POST /v1/inventory-movements",
           "GET/POST /v1/branch-reconciliations",
           "POST /v1/seed/demo-branch",
@@ -96,7 +100,7 @@ export default {
           core: ["org-units", "employees", "orders", "shipments"],
           commerce: ["channels", "channel-accounts", "shopify-webhook", "amazon-webhook"],
           newToday: ["customers", "inventory", "pricing", "tax", "payments", "offline-sync"],
-          financeOps: ["sales-posting", "inventory-movements", "branch-reconciliation", "payment-split", "day-close-summary"]
+          financeOps: ["sales-posting", "inventory-movements", "branch-reconciliation", "payment-split", "day-close-summary", "till-session", "cash-drop", "variance-reason-codes"]
         }
       });
     }
@@ -119,6 +123,10 @@ export default {
       "/v1/sales-receipts",
       "/v1/sales-receipt-lines",
       "/v1/sales-receipt-payments",
+      "/v1/till-sessions",
+      "/v1/till-sessions/close",
+      "/v1/cash-drops",
+      "/v1/variance-reasons",
       "/v1/inventory-movements",
       "/v1/branch-reconciliations",
       "/v1/seed/demo-branch",
@@ -683,6 +691,117 @@ export default {
         payments: payments.results ?? [],
         reconciliation: reconciliation ?? null,
       });
+    }
+
+    if (path === "/v1/till-sessions" && method === "GET") {
+      const { results } = await env.openclaw_pos
+        .prepare(`SELECT * FROM till_sessions ORDER BY opened_at DESC LIMIT 200`)
+        .all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/till-sessions" && method === "POST") {
+      const body = await readJson<{
+        id?: string; till_id?: string; branch_id?: string; opened_by_employee_id?: string | null; opening_float_amount?: number; notes?: string | null;
+      }>(request);
+
+      if (!body?.id || !body.till_id || !body.branch_id) {
+        return badRequest("Required fields: id, till_id, branch_id");
+      }
+
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO till_sessions (id, till_id, branch_id, opened_by_employee_id, opening_float_amount, opened_at, status, notes, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, 'open', ?, ?, ?)`)
+          .bind(body.id, body.till_id, body.branch_id, body.opened_by_employee_id ?? null, body.opening_float_amount ?? 0, nowIso(), body.notes ?? null, nowIso(), nowIso())
+          .run();
+        return json({ ok: true, id: body.id, status: "open" }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/till-sessions/close" && method === "POST") {
+      const body = await readJson<{
+        till_session_id?: string; expected_cash_amount?: number; counted_cash_amount?: number; notes?: string | null;
+      }>(request);
+
+      if (!body?.till_session_id || body.expected_cash_amount === undefined || body.counted_cash_amount === undefined) {
+        return badRequest("Required fields: till_session_id, expected_cash_amount, counted_cash_amount");
+      }
+
+      const variance = Number(body.counted_cash_amount) - Number(body.expected_cash_amount);
+
+      try {
+        await env.openclaw_pos
+          .prepare(`UPDATE till_sessions
+                    SET expected_cash_amount = ?, counted_cash_amount = ?, variance_amount = ?, status = 'closed', closed_at = ?, notes = COALESCE(?, notes), updated_at = ?
+                    WHERE id = ?`)
+          .bind(body.expected_cash_amount, body.counted_cash_amount, variance, nowIso(), body.notes ?? null, nowIso(), body.till_session_id)
+          .run();
+
+        return json({ ok: true, till_session_id: body.till_session_id, status: "closed", variance_amount: variance }, 200);
+      } catch (e) {
+        return json({ ok: false, error: "Close failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/cash-drops" && method === "GET") {
+      const { results } = await env.openclaw_pos
+        .prepare(`SELECT * FROM cash_drops ORDER BY dropped_at DESC LIMIT 300`)
+        .all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/cash-drops" && method === "POST") {
+      const body = await readJson<{
+        id?: string; till_session_id?: string; branch_id?: string; amount?: number; drop_reason?: string; reference_no?: string | null;
+      }>(request);
+
+      if (!body?.id || !body.till_session_id || !body.branch_id || body.amount === undefined || !body.drop_reason) {
+        return badRequest("Required fields: id, till_session_id, branch_id, amount, drop_reason");
+      }
+
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO cash_drops (id, till_session_id, branch_id, amount, drop_reason, reference_no, dropped_at, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+          .bind(body.id, body.till_session_id, body.branch_id, body.amount, body.drop_reason, body.reference_no ?? null, nowIso(), nowIso())
+          .run();
+
+        return json({ ok: true, id: body.id }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/variance-reasons" && method === "GET") {
+      const { results } = await env.openclaw_pos
+        .prepare(`SELECT * FROM variance_reasons ORDER BY created_at DESC LIMIT 300`)
+        .all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/variance-reasons" && method === "POST") {
+      const body = await readJson<{
+        id?: string; till_session_id?: string | null; branch_reconciliation_id?: string | null; reason_code?: string; reason_note?: string | null; created_by_employee_id?: string | null;
+      }>(request);
+
+      if (!body?.id || !body.reason_code) {
+        return badRequest("Required fields: id, reason_code");
+      }
+
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO variance_reasons (id, till_session_id, branch_reconciliation_id, reason_code, reason_note, created_by_employee_id, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)`)
+          .bind(body.id, body.till_session_id ?? null, body.branch_reconciliation_id ?? null, body.reason_code, body.reason_note ?? null, body.created_by_employee_id ?? null, nowIso())
+          .run();
+
+        return json({ ok: true, id: body.id }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
     }
 
     if (path === "/v1/inventory-movements" && method === "GET") {
