@@ -15,8 +15,12 @@
       --brand: #58d5ff;
       --ok: #4ade80;
       --warn: #facc15;
+      --err: #fb7185;
+      --focus: #60a5fa;
     }
+
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
@@ -24,7 +28,9 @@
       color: var(--text);
       min-height: 100vh;
     }
+
     .app { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+
     aside {
       border-right: 1px solid var(--line);
       background: #0a1020;
@@ -33,25 +39,43 @@
       top: 0;
       height: 100vh;
     }
+
     .logo { font-size: 18px; font-weight: 700; margin: 0 0 16px; }
     .sub { color: var(--muted); font-size: 12px; margin-bottom: 16px; }
+
     .nav { display: grid; gap: 8px; }
+
     .nav button {
       width: 100%;
       text-align: left;
       border: 1px solid var(--line);
+      border-radius: 10px;
       background: var(--panel-2);
       color: var(--text);
-      border-radius: 10px;
       padding: 10px;
       cursor: pointer;
+      display: grid;
+      gap: 2px;
+      transition: 120ms ease;
     }
+
+    .nav button:hover { border-color: #36518b; }
+
+    .nav button .nav-meta {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
     .nav button.active {
       border-color: #3b82f6;
       background: #162342;
-      box-shadow: inset 0 0 0 1px #3b82f6aa;
+      box-shadow: inset 3px 0 0 #60a5fa, inset 0 0 0 1px #3b82f6aa;
     }
+
     main { padding: 24px; }
+
     .topbar {
       display: flex;
       justify-content: space-between;
@@ -59,6 +83,7 @@
       flex-wrap: wrap;
       margin-bottom: 16px;
     }
+
     .badge {
       border: 1px solid var(--line);
       border-radius: 999px;
@@ -67,6 +92,7 @@
       color: var(--muted);
       background: var(--panel);
     }
+
     .screen {
       display: none;
       border: 1px solid var(--line);
@@ -74,20 +100,36 @@
       background: linear-gradient(160deg, var(--panel), #0f1628);
       padding: 18px;
     }
+
     .screen.active { display: block; }
+
     h1 { font-size: 28px; margin: 0 0 6px; }
     h2 { margin: 0 0 6px; font-size: 22px; }
     p { margin: 0 0 12px; color: var(--muted); }
+
+    .screen-head {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .step { font-size: 12px; color: var(--brand); }
+
     .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
     .card {
       border: 1px solid var(--line);
       border-radius: 12px;
       background: #0c1427;
       padding: 12px;
     }
+
     .card h3 { margin: 0 0 8px; font-size: 16px; }
     .small { font-size: 12px; color: var(--muted); }
     .row { display: flex; gap: 8px; flex-wrap: wrap; }
+
     .btn {
       border: 1px solid #2c3d63;
       background: #15213f;
@@ -96,11 +138,63 @@
       padding: 8px 11px;
       cursor: pointer;
     }
+
+    .btn:hover { border-color: #3f5d97; }
     .btn.primary { background: linear-gradient(90deg, #0ea5e9, #2563eb); border-color: #2563eb; }
     .btn.ok { background: #153b2a; border-color: #1f7a4f; }
+    .btn.warn { background: #3d2f12; border-color: #8a6720; }
+
     .stat { font-size: 24px; font-weight: 700; }
     .status-ok { color: var(--ok); }
     .status-warn { color: var(--warn); }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin: 12px 0;
+    }
+
+    .field { display: grid; gap: 6px; }
+    .field label { font-size: 12px; color: var(--muted); }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid #344466;
+      background: #0c1530;
+      color: var(--text);
+      padding: 9px 10px;
+      font: inherit;
+    }
+
+    .field textarea { min-height: 76px; resize: vertical; }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      outline: none;
+      border-color: var(--focus);
+      box-shadow: 0 0 0 3px #60a5fa2f;
+    }
+
+    .state {
+      display: none;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin: 6px 0 12px;
+      border: 1px solid var(--line);
+      font-size: 13px;
+    }
+
+    .state.show { display: block; }
+    .state.loading { border-color: #2563eb; background: #172554; }
+    .state.error { border-color: #be123c; background: #4c0519; }
+    .state.empty { border-color: #854d0e; background: #422006; }
+    .state.success { border-color: #166534; background: #052e16; }
+
     @media (max-width: 850px) {
       .app { grid-template-columns: 1fr; }
       aside { position: static; height: auto; }
@@ -113,7 +207,7 @@
       <div class="logo">OpenClaw POS Prototype</div>
       <div class="sub">Clickable shell for cross-module demo</div>
       <div class="nav" id="nav"></div>
-      <p class="small" style="margin-top:16px;">Tip: use this in stakeholder demos to walk end-to-end operational flow.</p>
+      <p class="small" style="margin-top:16px;">Tip: every screen has demo form controls + quick state toggles for stakeholder walkthroughs.</p>
     </aside>
 
     <main>
@@ -130,49 +224,82 @@
       </div>
 
       <section class="screen" id="checkout">
-        <h2>POS Checkout</h2>
+        <div class="screen-head"><h2>POS Checkout</h2><span class="step">Step 1/6</span></div>
         <p>Scan items, apply pricing/tax policy, capture payments, and issue receipt.</p>
+        <div class="state" data-state="checkout"></div>
+        <div class="form-grid">
+          <div class="field"><label>Customer</label><input placeholder="Walk-in / Loyalty ID"></div>
+          <div class="field"><label>Discount Code</label><input placeholder="Optional"></div>
+          <div class="field"><label>Payment Mix</label><select><option>Cash + Card</option><option>Card Only</option><option>Wallet</option></select></div>
+        </div>
         <div class="grid">
           <div class="card"><h3>Basket</h3><div class="small">3 items • subtotal PKR 4,250 • tax inclusive</div></div>
           <div class="card"><h3>Payment Split</h3><div class="small">Cash PKR 2,000 + Card PKR 2,250</div></div>
           <div class="card"><h3>Sync Status</h3><div class="small status-ok">Queued safely for sync outbox</div></div>
         </div>
         <div class="row" style="margin-top:12px;">
+          <button class="btn warn" data-state-btn="checkout:loading">Simulate Payment Authorizing</button>
+          <button class="btn" data-state-btn="checkout:error">Simulate Card Failure</button>
+          <button class="btn" data-state-btn="checkout:clear">Clear State</button>
           <button class="btn primary" data-go="refunds">Issue Return / Refund</button>
           <button class="btn" data-go="till-close">Move to Till Close</button>
         </div>
       </section>
 
       <section class="screen" id="refunds">
-        <h2>Returns / Refunds</h2>
+        <div class="screen-head"><h2>Returns / Refunds</h2><span class="step">Step 2/6</span></div>
         <p>Find receipt, validate return lines, compute refund, and reverse inventory.</p>
+        <div class="state" data-state="refunds"></div>
+        <div class="form-grid">
+          <div class="field"><label>Receipt Number</label><input value="#KHI01-T2-100483"></div>
+          <div class="field"><label>Reason Code</label><select><option>Damaged Item</option><option>Wrong Item</option><option>Customer Cancelled</option></select></div>
+          <div class="field"><label>Restock</label><select><option>Yes</option><option>No</option></select></div>
+        </div>
         <div class="grid">
           <div class="card"><h3>Original Receipt</h3><div class="small">#KHI01-T2-100483 • 2026-02-27 14:09</div></div>
           <div class="card"><h3>Return Lines</h3><div class="small">1 x SKU-CH-101 (defect) • restock: yes</div></div>
           <div class="card"><h3>Refund Method</h3><div class="small">Original card route (same-day)</div></div>
         </div>
         <div class="row" style="margin-top:12px;">
+          <button class="btn" data-state-btn="refunds:empty">Simulate Receipt Not Found</button>
+          <button class="btn" data-state-btn="refunds:error">Simulate Policy Block</button>
+          <button class="btn" data-state-btn="refunds:clear">Clear State</button>
           <button class="btn ok" data-go="checkout">Back to Checkout</button>
           <button class="btn primary" data-go="till-close">Finalize & Go Till Close</button>
         </div>
       </section>
 
       <section class="screen" id="till-close">
-        <h2>Till Close</h2>
+        <div class="screen-head"><h2>Till Close</h2><span class="step">Step 3/6</span></div>
         <p>Reconcile expected vs counted cash, capture drops/variance reasons, submit close.</p>
+        <div class="state" data-state="till-close"></div>
+        <div class="form-grid">
+          <div class="field"><label>Counted Cash (PKR)</label><input value="127900"></div>
+          <div class="field"><label>Variance Reason</label><input value="Petty cash correction"></div>
+          <div class="field"><label>Approver</label><input placeholder="Shift manager"></div>
+        </div>
         <div class="grid">
           <div class="card"><h3>Expected Cash</h3><div class="stat">PKR 128,200</div></div>
           <div class="card"><h3>Counted Cash</h3><div class="stat">PKR 127,900</div></div>
           <div class="card"><h3>Variance</h3><div class="stat status-warn">-300</div><div class="small">Reason: petty cash correction</div></div>
         </div>
         <div class="row" style="margin-top:12px;">
+          <button class="btn warn" data-state-btn="till-close:loading">Simulate Supervisor Review</button>
+          <button class="btn" data-state-btn="till-close:error">Simulate Missing Approver</button>
+          <button class="btn" data-state-btn="till-close:clear">Clear State</button>
           <button class="btn primary" data-go="day-close">Submit Till Close</button>
         </div>
       </section>
 
       <section class="screen" id="day-close">
-        <h2>Day-Close Dashboard</h2>
+        <div class="screen-head"><h2>Day-Close Dashboard</h2><span class="step">Step 4/6</span></div>
         <p>Management summary of sales, refunds, till variances, and posting readiness.</p>
+        <div class="state" data-state="day-close"></div>
+        <div class="form-grid">
+          <div class="field"><label>Posting Batch</label><input placeholder="Auto-generated batch ID"></div>
+          <div class="field"><label>Export Type</label><select><option>ERP + BI Bundle</option><option>ERP Only</option><option>BI Only</option></select></div>
+          <div class="field"><label>Notes</label><input placeholder="Optional exception notes"></div>
+        </div>
         <div class="grid">
           <div class="card"><h3>Net Sales</h3><div class="stat">PKR 2.83M</div></div>
           <div class="card"><h3>Refunds</h3><div class="stat">PKR 84K</div></div>
@@ -180,28 +307,46 @@
           <div class="card"><h3>Branch Reconciliation</h3><div class="small status-ok">Ready for FinOps posting</div></div>
         </div>
         <div class="row" style="margin-top:12px;">
+          <button class="btn" data-state-btn="day-close:loading">Simulate Consolidation</button>
+          <button class="btn" data-state-btn="day-close:empty">Simulate Pending Till</button>
+          <button class="btn" data-state-btn="day-close:clear">Clear State</button>
           <button class="btn" data-go="procurement">Create Purchase Order</button>
           <button class="btn primary" data-go="payroll">Open Payroll Run</button>
         </div>
       </section>
 
       <section class="screen" id="procurement">
-        <h2>Procurement — Purchase Order</h2>
+        <div class="screen-head"><h2>Procurement — Purchase Order</h2><span class="step">Step 5/6</span></div>
         <p>Raise branch replenishment PO linked to approved supplier and warehouse targets.</p>
+        <div class="state" data-state="procurement"></div>
+        <div class="form-grid">
+          <div class="field"><label>Supplier</label><input value="Global Foods Distributor Ltd."></div>
+          <div class="field"><label>Delivery Warehouse</label><select><option>WH-KHI-CENTRAL</option><option>WH-KHI-EAST</option></select></div>
+          <div class="field"><label>Priority</label><select><option>Normal</option><option>Urgent</option></select></div>
+        </div>
         <div class="grid">
           <div class="card"><h3>Supplier</h3><div class="small">Global Foods Distributor Ltd.</div></div>
           <div class="card"><h3>PO Value</h3><div class="stat">PKR 1.12M</div></div>
           <div class="card"><h3>ETA</h3><div class="small">2026-03-02 • WH-KHI-CENTRAL</div></div>
         </div>
         <div class="row" style="margin-top:12px;">
+          <button class="btn warn" data-state-btn="procurement:loading">Simulate Supplier Check</button>
+          <button class="btn" data-state-btn="procurement:error">Simulate Budget Exceeded</button>
+          <button class="btn" data-state-btn="procurement:clear">Clear State</button>
           <button class="btn primary" data-go="day-close">Back to Day-Close</button>
           <button class="btn" data-go="payroll">Continue to Payroll</button>
         </div>
       </section>
 
       <section class="screen" id="payroll">
-        <h2>Payroll Run</h2>
+        <div class="screen-head"><h2>Payroll Run</h2><span class="step">Step 6/6</span></div>
         <p>Lock attendance inputs, calculate gross-to-net, and queue payroll batch approvals.</p>
+        <div class="state" data-state="payroll"></div>
+        <div class="form-grid">
+          <div class="field"><label>Pay Cycle</label><select><option>Monthly - Feb 2026</option><option>Bi-Weekly</option></select></div>
+          <div class="field"><label>Approval Chain</label><input value="HR Head → CFO"></div>
+          <div class="field"><label>Comment</label><textarea placeholder="Add payroll run notes"></textarea></div>
+        </div>
         <div class="grid">
           <div class="card"><h3>Pay Cycle</h3><div class="small">Monthly • Feb 2026</div></div>
           <div class="card"><h3>Employees</h3><div class="stat">186</div></div>
@@ -209,6 +354,9 @@
           <div class="card"><h3>Status</h3><div class="small status-ok">Draft generated • Awaiting CFO approval</div></div>
         </div>
         <div class="row" style="margin-top:12px;">
+          <button class="btn" data-state-btn="payroll:loading">Simulate Payroll Compute</button>
+          <button class="btn" data-state-btn="payroll:empty">Simulate Missing Attendance</button>
+          <button class="btn" data-state-btn="payroll:clear">Clear State</button>
           <button class="btn primary" data-go="checkout">Restart Demo from Checkout</button>
         </div>
       </section>
@@ -229,13 +377,64 @@
     const title = document.getElementById('screenTitle');
     const desc = document.getElementById('screenDesc');
 
-    screens.forEach((s) => {
+    const stateCopy = {
+      checkout: {
+        loading: 'Authorizing card transaction... please keep customer card inserted.',
+        error: 'Card route unavailable. Switch gateway or fallback to cash split.',
+        empty: 'No basket lines found.',
+        success: 'Checkout posted.'
+      },
+      refunds: {
+        empty: 'No matching receipt found for this branch/date window.',
+        error: 'Return blocked: outside policy window for this SKU.',
+        loading: 'Validating original tender route...',
+        success: 'Refund posted.'
+      },
+      'till-close': {
+        loading: 'Supervisor approval pending for cash variance.',
+        error: 'Approval required before till close submission.',
+        empty: 'No cash count submitted yet.',
+        success: 'Till close accepted.'
+      },
+      'day-close': {
+        loading: 'Consolidating branch totals from all tills...',
+        empty: 'One till still open. Day-close posting is blocked.',
+        error: 'Reconciliation mismatch detected.',
+        success: 'Day-close posted.'
+      },
+      procurement: {
+        loading: 'Checking supplier credit limit and lead time...',
+        error: 'PO exceeds branch budget threshold; finance override required.',
+        empty: 'No suggested replenishment lines available.',
+        success: 'PO submitted.'
+      },
+      payroll: {
+        loading: 'Computing gross-to-net and statutory deductions...',
+        empty: 'Attendance feed missing for 11 employees.',
+        error: 'Payroll validation failed on tax profile mapping.',
+        success: 'Payroll batch queued.'
+      }
+    };
+
+    screens.forEach((s, idx) => {
       const btn = document.createElement('button');
-      btn.textContent = s.label;
       btn.dataset.target = s.id;
+      btn.innerHTML = `<strong>${s.label}</strong><span class="nav-meta">Module ${idx + 1}</span>`;
       btn.addEventListener('click', () => go(s.id));
       nav.appendChild(btn);
     });
+
+    function setState(screenId, kind) {
+      const el = document.querySelector(`[data-state="${screenId}"]`);
+      if (!el) return;
+      if (kind === 'clear') {
+        el.className = 'state';
+        el.textContent = '';
+        return;
+      }
+      el.className = `state show ${kind}`;
+      el.textContent = stateCopy[screenId]?.[kind] || `Demo state: ${kind}`;
+    }
 
     function go(id) {
       document.querySelectorAll('.screen').forEach((el) => el.classList.toggle('active', el.id === id));
@@ -250,6 +449,13 @@
 
     document.querySelectorAll('[data-go]').forEach((btn) => {
       btn.addEventListener('click', () => go(btn.dataset.go));
+    });
+
+    document.querySelectorAll('[data-state-btn]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const [screenId, kind] = btn.dataset.stateBtn.split(':');
+        setState(screenId, kind);
+      });
     });
 
     const start = location.hash.replace('#', '');
