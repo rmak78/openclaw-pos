@@ -145,6 +145,7 @@ Also planned/expanding:
 - `docs/reference/` → report catalog, glossary, i18n plans
 - `.github/workflows/` → CI, security, pages
 - `web/` → project landing page (GitHub Pages)
+- `web/demos/` → separate role-based demo experiences (till, branch, warehouse, regional, country, global HQ)
 
 ---
 
