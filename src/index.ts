@@ -72,6 +72,8 @@ export default {
           "GET/POST /v1/branch-reconciliations",
           "GET/POST /v1/suppliers",
           "GET/POST /v1/purchase-orders",
+          "POST /v1/purchase-orders/transition",
+          "GET /v1/purchase-orders/summary",
           "GET/POST /v1/goods-receipts",
           "POST /v1/seed/demo-branch",
           "POST /v1/connectors/shopify/order-webhook",
@@ -107,7 +109,7 @@ export default {
           commerce: ["channels", "channel-accounts", "shopify-webhook", "amazon-webhook"],
           newToday: ["customers", "inventory", "pricing", "tax", "payments", "offline-sync"],
           financeOps: ["sales-posting", "inventory-movements", "branch-reconciliation", "payment-split", "day-close-summary", "till-session", "cash-drop", "variance-reason-codes", "sales-returns", "refunds"],
-          procurement: ["suppliers", "purchase-orders", "goods-receipts", "grn"]
+          procurement: ["suppliers", "purchase-orders", "po-lifecycle", "po-status-events", "purchase-order-summary", "goods-receipts", "grn"]
         }
       });
     }
@@ -141,6 +143,7 @@ export default {
       "/v1/branch-reconciliations",
       "/v1/suppliers",
       "/v1/purchase-orders",
+      "/v1/purchase-orders/transition",
       "/v1/goods-receipts",
       "/v1/seed/demo-branch",
       "/v1/connectors/shopify/order-webhook",
@@ -1189,7 +1192,7 @@ export default {
 
     if (path === "/v1/suppliers" && method === "GET") {
       const { results } = await env.openclaw_pos
-        .prepare(`SELECT * FROM suppliers ORDER BY created_at DESC LIMIT 200`)
+        .prepare(`SELECT * FROM suppliers ORDER BY created_at DESC LIMIT 300`)
         .all();
       return json({ ok: true, items: results ?? [] });
     }
@@ -1197,7 +1200,7 @@ export default {
     if (path === "/v1/suppliers" && method === "POST") {
       const body = await readJson<{
         id?: string; supplier_code?: string; supplier_name?: string; contact_name?: string | null; phone?: string | null;
-        email?: string | null; country_code?: string | null; payment_terms_days?: number; status?: string;
+        email?: string | null; country_code?: string | null; payment_terms_days?: number; payment_terms_note?: string | null; status?: string;
       }>(request);
 
       if (!body?.id || !body.supplier_code || !body.supplier_name) {
@@ -1206,8 +1209,8 @@ export default {
 
       try {
         await env.openclaw_pos
-          .prepare(`INSERT INTO suppliers (id, supplier_code, supplier_name, contact_name, phone, email, country_code, payment_terms_days, status, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+          .prepare(`INSERT INTO suppliers (id, supplier_code, supplier_name, contact_name, phone, email, country_code, payment_terms_days, payment_terms_note, status, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
           .bind(
             body.id,
             body.supplier_code,
@@ -1217,6 +1220,7 @@ export default {
             body.email ?? null,
             body.country_code ?? null,
             body.payment_terms_days ?? 0,
+            body.payment_terms_note ?? null,
             body.status ?? "active",
             nowIso(),
             nowIso()
@@ -1231,7 +1235,10 @@ export default {
 
     if (path === "/v1/purchase-orders" && method === "GET") {
       const { results } = await env.openclaw_pos
-        .prepare(`SELECT * FROM purchase_orders ORDER BY order_date DESC, created_at DESC LIMIT 200`)
+        .prepare(`SELECT po.*, s.supplier_code, s.supplier_name, s.payment_terms_days, s.payment_terms_note
+                  FROM purchase_orders po
+                  LEFT JOIN suppliers s ON s.id = po.supplier_id
+                  ORDER BY po.order_date DESC, po.created_at DESC LIMIT 300`)
         .all();
       return json({ ok: true, items: results ?? [] });
     }
@@ -1260,12 +1267,17 @@ export default {
             body.order_date,
             body.expected_date ?? null,
             body.currency_code,
-            body.status ?? "draft",
+            initialStatus,
             body.notes ?? null,
             body.created_by_employee_id ?? null,
             nowIso(),
             nowIso()
           )
+          .run();
+
+        await env.openclaw_pos
+          .prepare(`INSERT INTO purchase_order_status_events (id, purchase_order_id, from_status, to_status, transition_note, created_at) VALUES (?, ?, NULL, ?, 'PO created', ?)` )
+          .bind(crypto.randomUUID(), body.id, initialStatus, nowIso())
           .run();
 
         if (body.lines?.length) {
@@ -1296,10 +1308,79 @@ export default {
           }
         }
 
-        return json({ ok: true, id: body.id, lines_created: body.lines?.length ?? 0 }, 201);
+        return json({ ok: true, id: body.id, status: initialStatus, lines_created: body.lines?.length ?? 0 }, 201);
       } catch (e) {
         return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
       }
+    }
+
+    if (path === "/v1/purchase-orders/transition" && method === "POST") {
+      const body = await readJson<{ purchase_order_id?: string; to_status?: string; transition_note?: string | null }>(request);
+      if (!body?.purchase_order_id || !body.to_status) {
+        return badRequest("Required fields: purchase_order_id, to_status");
+      }
+
+      const allowed: Record<string, string[]> = {
+        draft: ["submitted", "cancelled"],
+        submitted: ["partially_received", "received", "cancelled"],
+        partially_received: ["received", "cancelled"],
+        received: ["closed"],
+        closed: [],
+        cancelled: [],
+      };
+
+      const current = await env.openclaw_pos
+        .prepare(`SELECT id, status FROM purchase_orders WHERE id = ?`)
+        .bind(body.purchase_order_id)
+        .first<{ id: string; status: string }>();
+
+      if (!current) {
+        return json({ ok: false, error: "Purchase order not found", purchase_order_id: body.purchase_order_id }, 404);
+      }
+
+      const nextAllowed = allowed[current.status] ?? [];
+      if (!nextAllowed.includes(body.to_status)) {
+        return json({ ok: false, error: "Invalid status transition", from_status: current.status, to_status: body.to_status, allowed_to_status: nextAllowed }, 400);
+      }
+
+      const stamp = nowIso();
+      try {
+        await env.openclaw_pos
+          .prepare(`UPDATE purchase_orders SET status = ?, updated_at = ? WHERE id = ?`)
+          .bind(body.to_status, stamp, body.purchase_order_id)
+          .run();
+
+        await env.openclaw_pos
+          .prepare(`INSERT INTO purchase_order_status_events (id, purchase_order_id, from_status, to_status, transition_note, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?)`)
+          .bind(crypto.randomUUID(), body.purchase_order_id, current.status, body.to_status, body.transition_note ?? null, stamp)
+          .run();
+
+        return json({ ok: true, purchase_order_id: body.purchase_order_id, from_status: current.status, status: body.to_status });
+      } catch (e) {
+        return json({ ok: false, error: "Transition failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/purchase-orders/summary" && method === "GET") {
+      const grouped = await env.openclaw_pos
+        .prepare(`SELECT status, COUNT(*) AS count
+                  FROM purchase_orders
+                  GROUP BY status
+                  ORDER BY status`)
+        .all();
+
+      const totals = await env.openclaw_pos
+        .prepare(`SELECT COUNT(*) AS po_count FROM purchase_orders`)
+        .first<{ po_count: number }>();
+
+      return json({
+        ok: true,
+        summary: {
+          total_purchase_orders: Number(totals?.po_count ?? 0),
+          by_status: grouped.results ?? [],
+        },
+      });
     }
 
     if (path === "/v1/goods-receipts" && method === "GET") {
