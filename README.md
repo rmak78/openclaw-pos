@@ -115,12 +115,18 @@ Also planned/expanding:
 - `GET/POST /v1/variance-reasons`
 - `GET/POST /v1/inventory-movements`
 - `GET/POST /v1/branch-reconciliations`
-- `GET/POST /v1/suppliers`
-- `GET/POST /v1/purchase-orders`
-- `GET/POST /v1/goods-receipts`
 - `GET/POST /v1/pay-cycles`
 - `GET/POST /v1/pay-components`
 - `GET/POST /v1/payroll-runs`
+- `GET/POST /v1/payroll-run-lines`
+- `POST /v1/payroll-runs/calculate-preview`
+- `POST /v1/payroll-runs/approve`
+- `POST /v1/payroll-runs/mark-processed`
+- `GET /v1/payroll-runs/totals?payroll_run_id=<id>`
+- `GET/POST /v1/payroll-run-audit-logs`
+- `GET/POST /v1/suppliers`
+- `GET/POST /v1/purchase-orders`
+- `GET/POST /v1/goods-receipts`
 - `POST /v1/seed/demo-branch`
 - `POST /v1/connectors/shopify/order-webhook`
 - `POST /v1/connectors/amazon/order-webhook`
@@ -200,9 +206,13 @@ Key packs:
 - `docs/architecture/sprint-plan-v1.md`
 - `docs/operations/finops-sprint-v1.md`
 - `docs/operations/hris-sprint-v1.md`
+- `docs/operations/pakistan-rollout-demo-seed-scenarios.md`
 - `docs/reference/management-report-catalog-v1.md`
 - `docs/reference/i18n-ar-de-plan.md`
 - `docs/country-packs/*.md`
+
+Demo seed runner:
+- `npm run seed:pk-demo` (supports `BASE_URL`, `API_KEY`, `RUN_TAG`)
 
 ---
 
@@ -247,7 +257,11 @@ Latest delivered progress:
 - Core module APIs now live for customers, inventory, pricing, tax, and payments
 - Offline sync baseline added with outbox + conflict queues
 - Pakistan-first config baseline added (`tax.default_mode`, `currency.operational=PKR`, `currency.reporting=USD`)
-- Payroll v1 skeleton added (pay cycles, pay components, payroll runs + D1 migration `0007_payroll_v1_skeleton.sql`)
+- Canonical payroll stack delivered (supersedes PRs #12, #15, #16):
+  - `0012_payroll_v1_skeleton.sql` (pay cycles, pay components, payroll runs)
+  - `0013_payroll_execution_baseline.sql` (payroll run lines)
+  - `0014_payroll_approval_workflow.sql` (approval/processed metadata + audit log table)
+  - payroll execution endpoints: run lines, calculate-preview, approve, mark-processed, totals, audit log API
 - Sales returns + refund APIs added with baseline inventory reversal on return lines (`0008_sales_returns_refunds_inventory_reversal.sql`)
 - Demo seed endpoint included for a Karachi branch + till setup (`/v1/seed/demo-branch`)
 
