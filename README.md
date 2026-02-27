@@ -8,9 +8,9 @@ Offline-first, multi-tier POS/ERP for real-world operations where connectivity i
 
 ## Project Homepage & Demo
 
-- **Project homepage (primary):** https://bixitech.com/openclaw-pos/
-- **GitHub Pages mirror:** https://rmak78.github.io/openclaw-pos/
-- **Repository:** https://github.com/rmak78/openclaw-pos
+- **Project homepage (primary):** [bixitech.com/openclaw-pos](https://bixitech.com/openclaw-pos/)
+- **GitHub Pages mirror:** [rmak78.github.io/openclaw-pos](https://rmak78.github.io/openclaw-pos/)
+- **Repository:** [github.com/rmak78/openclaw-pos](https://github.com/rmak78/openclaw-pos)
 
 ---
 
@@ -251,4 +251,4 @@ Latest delivered progress:
 Current focus:
 - Raise demo UI quality to production-style standards
 - Consolidate and merge canonical payroll path
-- Keep hosted preview continuously updated at **https://bixitech.com/openclaw-pos/**
+- Keep hosted preview continuously updated at **[bixitech.com/openclaw-pos](https://bixitech.com/openclaw-pos/)**
