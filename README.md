@@ -178,6 +178,17 @@ python3 -m http.server 8080
 Then open:
 - `http://localhost:8080`
 
+### PR previews for `web/**`
+
+When a pull request changes files under `web/**`, GitHub Actions now:
+- uploads the static `web/` content as a Pages artifact,
+- deploys a **PR preview** via GitHub Pages (for same-repo PRs), and
+- posts/updates a sticky comment on the PR with the preview URL + local fallback instructions.
+
+Notes:
+- Forked PRs skip Pages deployment for security. The workflow still comments with local preview instructions.
+- Production Pages deployment still happens from `main` via `.github/workflows/pages.yml`.
+
 ---
 
 ## Documentation Index
