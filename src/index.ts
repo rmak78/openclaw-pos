@@ -5,9 +5,7 @@ const json = (data: unknown, status = 200) =>
   });
 
 const badRequest = (message: string) => json({ ok: false, error: message }, 400);
-
 const unauthorized = () => json({ ok: false, error: "Unauthorized" }, 401);
-
 const nowIso = () => new Date().toISOString();
 
 const requireApiKey = (request: Request, env: { API_WRITE_KEY?: string }) => {
@@ -15,6 +13,8 @@ const requireApiKey = (request: Request, env: { API_WRITE_KEY?: string }) => {
   const key = request.headers.get("x-api-key");
   return key === env.API_WRITE_KEY;
 };
+
+const readJson = async <T>(request: Request) => (await request.json().catch(() => null)) as T | null;
 
 export default {
   async fetch(
@@ -30,9 +30,7 @@ export default {
     }
 
     if (path === "/db-check") {
-      const row = await env.openclaw_pos
-        .prepare("SELECT datetime('now') as now_utc")
-        .first<{ now_utc: string }>();
+      const row = await env.openclaw_pos.prepare("SELECT datetime('now') as now_utc").first<{ now_utc: string }>();
       return json({ ok: true, db_time: row?.now_utc ?? null });
     }
 
@@ -44,15 +42,25 @@ export default {
           "GET /v1/health",
           "GET /v1/db-check",
           "GET /v1/meta",
+          "GET /v1/modules",
           "GET/POST /v1/org-units",
           "GET/POST /v1/employees",
           "GET/POST /v1/channels",
           "GET/POST /v1/channel-accounts",
           "GET/POST /v1/orders",
           "GET/POST /v1/shipments",
+          "GET/POST /v1/customers",
+          "GET/POST /v1/inventory-items",
+          "GET/POST /v1/prices",
+          "GET/POST /v1/tax-rules",
+          "GET/POST /v1/payment-methods",
+          "GET/POST /v1/sync-outbox",
+          "GET/POST /v1/sync-conflicts",
+          "GET/POST /v1/app-config",
+          "POST /v1/seed/demo-branch",
           "POST /v1/connectors/shopify/order-webhook",
-          "POST /v1/connectors/amazon/order-webhook",
-        ],
+          "POST /v1/connectors/amazon/order-webhook"
+        ]
       });
     }
 
@@ -61,9 +69,7 @@ export default {
     }
 
     if (path === "/v1/db-check") {
-      const row = await env.openclaw_pos
-        .prepare("SELECT datetime('now') as now_utc")
-        .first<{ now_utc: string }>();
+      const row = await env.openclaw_pos.prepare("SELECT datetime('now') as now_utc").first<{ now_utc: string }>();
       return json({ ok: true, api: "v1", db_time: row?.now_utc ?? null });
     }
 
@@ -71,9 +77,20 @@ export default {
       return json({
         ok: true,
         api: "v1",
-        version: "0.3.0",
+        version: "0.4.0",
         deployedOn: "cloudflare-workers",
         db: "d1:openclaw_pos",
+      });
+    }
+
+    if (path === "/v1/modules") {
+      return json({
+        ok: true,
+        modules: {
+          core: ["org-units", "employees", "orders", "shipments"],
+          commerce: ["channels", "channel-accounts", "shopify-webhook", "amazon-webhook"],
+          newToday: ["customers", "inventory", "pricing", "tax", "payments", "offline-sync"]
+        }
       });
     }
 
@@ -84,6 +101,15 @@ export default {
       "/v1/channel-accounts",
       "/v1/orders",
       "/v1/shipments",
+      "/v1/customers",
+      "/v1/inventory-items",
+      "/v1/prices",
+      "/v1/tax-rules",
+      "/v1/payment-methods",
+      "/v1/sync-outbox",
+      "/v1/sync-conflicts",
+      "/v1/app-config",
+      "/v1/seed/demo-branch",
       "/v1/connectors/shopify/order-webhook",
       "/v1/connectors/amazon/order-webhook",
     ]);
@@ -103,18 +129,16 @@ export default {
     }
 
     if (path === "/v1/org-units" && method === "POST") {
-      const body = (await request.json().catch(() => null)) as
-        | {
-            id?: string;
-            parent_id?: string | null;
-            unit_type?: string;
-            code?: string;
-            name?: string;
-            country_code?: string | null;
-            currency_code?: string | null;
-            is_active?: number;
-          }
-        | null;
+      const body = await readJson<{
+        id?: string;
+        parent_id?: string | null;
+        unit_type?: string;
+        code?: string;
+        name?: string;
+        country_code?: string | null;
+        currency_code?: string | null;
+        is_active?: number;
+      }>(request);
 
       if (!body?.id || !body?.unit_type || !body?.code || !body?.name) {
         return badRequest("Required fields: id, unit_type, code, name");
@@ -155,18 +179,16 @@ export default {
     }
 
     if (path === "/v1/employees" && method === "POST") {
-      const body = (await request.json().catch(() => null)) as
-        | {
-            id?: string;
-            employee_code?: string;
-            full_name?: string;
-            employment_type?: string;
-            country_code?: string;
-            legal_entity_id?: string | null;
-            branch_id?: string | null;
-            is_active?: number;
-          }
-        | null;
+      const body = await readJson<{
+        id?: string;
+        employee_code?: string;
+        full_name?: string;
+        employment_type?: string;
+        country_code?: string;
+        legal_entity_id?: string | null;
+        branch_id?: string | null;
+        is_active?: number;
+      }>(request);
 
       if (!body?.id || !body?.employee_code || !body?.full_name || !body?.employment_type || !body?.country_code) {
         return badRequest("Required fields: id, employee_code, full_name, employment_type, country_code");
@@ -197,16 +219,12 @@ export default {
     }
 
     if (path === "/v1/channels" && method === "GET") {
-      const { results } = await env.openclaw_pos
-        .prepare(`SELECT * FROM sales_channels ORDER BY created_at DESC LIMIT 200`)
-        .all();
+      const { results } = await env.openclaw_pos.prepare(`SELECT * FROM sales_channels ORDER BY created_at DESC LIMIT 200`).all();
       return json({ ok: true, items: results ?? [] });
     }
 
     if (path === "/v1/channels" && method === "POST") {
-      const body = (await request.json().catch(() => null)) as
-        | { id?: string; code?: string; name?: string; channel_type?: string; country_code?: string | null; is_active?: number }
-        | null;
+      const body = await readJson<{ id?: string; code?: string; name?: string; channel_type?: string; country_code?: string | null; is_active?: number }>(request);
       if (!body?.id || !body.code || !body.name || !body.channel_type) {
         return badRequest("Required fields: id, code, name, channel_type");
       }
@@ -225,16 +243,12 @@ export default {
     }
 
     if (path === "/v1/channel-accounts" && method === "GET") {
-      const { results } = await env.openclaw_pos
-        .prepare(`SELECT * FROM channel_accounts ORDER BY created_at DESC LIMIT 200`)
-        .all();
+      const { results } = await env.openclaw_pos.prepare(`SELECT * FROM channel_accounts ORDER BY created_at DESC LIMIT 200`).all();
       return json({ ok: true, items: results ?? [] });
     }
 
     if (path === "/v1/channel-accounts" && method === "POST") {
-      const body = (await request.json().catch(() => null)) as
-        | { id?: string; channel_id?: string; account_name?: string; external_account_id?: string | null; region_code?: string | null; credentials_ref?: string | null }
-        | null;
+      const body = await readJson<{ id?: string; channel_id?: string; account_name?: string; external_account_id?: string | null; region_code?: string | null; credentials_ref?: string | null }>(request);
       if (!body?.id || !body.channel_id || !body.account_name) {
         return badRequest("Required fields: id, channel_id, account_name");
       }
@@ -253,20 +267,16 @@ export default {
     }
 
     if (path === "/v1/orders" && method === "GET") {
-      const { results } = await env.openclaw_pos
-        .prepare(`SELECT * FROM orders ORDER BY created_at DESC LIMIT 200`)
-        .all();
+      const { results } = await env.openclaw_pos.prepare(`SELECT * FROM orders ORDER BY created_at DESC LIMIT 200`).all();
       return json({ ok: true, items: results ?? [] });
     }
 
     if (path === "/v1/orders" && method === "POST") {
-      const body = (await request.json().catch(() => null)) as
-        | {
-            id?: string; order_code?: string; source_channel_id?: string | null; source_account_id?: string | null;
-            source_order_id?: string | null; customer_ref?: string | null; currency_code?: string; country_code?: string | null;
-            order_status?: string; subtotal_amount?: number; tax_amount?: number; shipping_amount?: number; discount_amount?: number; total_amount?: number;
-          }
-        | null;
+      const body = await readJson<{
+        id?: string; order_code?: string; source_channel_id?: string | null; source_account_id?: string | null;
+        source_order_id?: string | null; customer_ref?: string | null; currency_code?: string; country_code?: string | null;
+        order_status?: string; subtotal_amount?: number; tax_amount?: number; shipping_amount?: number; discount_amount?: number; total_amount?: number;
+      }>(request);
       if (!body?.id || !body.order_code || !body.currency_code || !body.order_status) {
         return badRequest("Required fields: id, order_code, currency_code, order_status");
       }
@@ -291,16 +301,12 @@ export default {
     }
 
     if (path === "/v1/shipments" && method === "GET") {
-      const { results } = await env.openclaw_pos
-        .prepare(`SELECT * FROM dispatch_shipments ORDER BY created_at DESC LIMIT 200`)
-        .all();
+      const { results } = await env.openclaw_pos.prepare(`SELECT * FROM dispatch_shipments ORDER BY created_at DESC LIMIT 200`).all();
       return json({ ok: true, items: results ?? [] });
     }
 
     if (path === "/v1/shipments" && method === "POST") {
-      const body = (await request.json().catch(() => null)) as
-        | { id?: string; order_id?: string; source_org_unit_id?: string | null; courier_name?: string | null; tracking_number?: string | null; shipment_status?: string }
-        | null;
+      const body = await readJson<{ id?: string; order_id?: string; source_org_unit_id?: string | null; courier_name?: string | null; tracking_number?: string | null; shipment_status?: string }>(request);
       if (!body?.id || !body.order_id || !body.shipment_status) {
         return badRequest("Required fields: id, order_id, shipment_status");
       }
@@ -318,9 +324,226 @@ export default {
       }
     }
 
+    if (path === "/v1/customers" && method === "GET") {
+      const { results } = await env.openclaw_pos.prepare(`SELECT * FROM customers ORDER BY created_at DESC LIMIT 200`).all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/customers" && method === "POST") {
+      const body = await readJson<{ id?: string; customer_code?: string; full_name?: string; phone?: string | null; email?: string | null; loyalty_tier?: string | null; is_active?: number }>(request);
+      if (!body?.id || !body.customer_code || !body.full_name) return badRequest("Required fields: id, customer_code, full_name");
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO customers (id, customer_code, full_name, phone, email, loyalty_tier, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+          .bind(body.id, body.customer_code, body.full_name, body.phone ?? null, body.email ?? null, body.loyalty_tier ?? null, body.is_active ?? 1, nowIso(), nowIso())
+          .run();
+        return json({ ok: true, id: body.id }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/inventory-items" && method === "GET") {
+      const { results } = await env.openclaw_pos
+        .prepare(`SELECT * FROM inventory_items ORDER BY updated_at DESC LIMIT 200`)
+        .all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/inventory-items" && method === "POST") {
+      const body = await readJson<{ id?: string; sku_code?: string; item_name?: string; uom?: string; branch_id?: string | null; quantity_on_hand?: number; reorder_level?: number; is_active?: number }>(request);
+      if (!body?.id || !body.sku_code || !body.item_name || !body.uom) return badRequest("Required fields: id, sku_code, item_name, uom");
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO inventory_items (id, sku_code, item_name, uom, branch_id, quantity_on_hand, reorder_level, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+          .bind(body.id, body.sku_code, body.item_name, body.uom, body.branch_id ?? null, body.quantity_on_hand ?? 0, body.reorder_level ?? 0, body.is_active ?? 1, nowIso(), nowIso())
+          .run();
+        return json({ ok: true, id: body.id }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/prices" && method === "GET") {
+      const { results } = await env.openclaw_pos.prepare(`SELECT * FROM pricing_rules ORDER BY created_at DESC LIMIT 200`).all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/prices" && method === "POST") {
+      const body = await readJson<{ id?: string; sku_code?: string; country_code?: string | null; currency_code?: string; price_list?: string; base_price?: number; valid_from?: string | null; valid_to?: string | null; is_active?: number }>(request);
+      if (!body?.id || !body.sku_code || !body.currency_code || !body.price_list) return badRequest("Required fields: id, sku_code, currency_code, price_list");
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO pricing_rules (id, sku_code, country_code, currency_code, price_list, base_price, valid_from, valid_to, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+          .bind(body.id, body.sku_code, body.country_code ?? null, body.currency_code, body.price_list, body.base_price ?? 0, body.valid_from ?? null, body.valid_to ?? null, body.is_active ?? 1, nowIso(), nowIso())
+          .run();
+        return json({ ok: true, id: body.id }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/tax-rules" && method === "GET") {
+      const { results } = await env.openclaw_pos.prepare(`SELECT * FROM tax_rules ORDER BY created_at DESC LIMIT 200`).all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/tax-rules" && method === "POST") {
+      const body = await readJson<{ id?: string; rule_code?: string; country_code?: string; tax_name?: string; tax_rate?: number; tax_mode?: string; is_active?: number }>(request);
+      if (!body?.id || !body.rule_code || !body.country_code || !body.tax_name || body.tax_rate === undefined || !body.tax_mode) {
+        return badRequest("Required fields: id, rule_code, country_code, tax_name, tax_rate, tax_mode");
+      }
+      if (!["inclusive", "exclusive"].includes(body.tax_mode)) {
+        return badRequest("tax_mode must be inclusive or exclusive");
+      }
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO tax_rules (id, rule_code, country_code, tax_name, tax_rate, tax_mode, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+          .bind(body.id, body.rule_code, body.country_code, body.tax_name, body.tax_rate, body.tax_mode, body.is_active ?? 1, nowIso(), nowIso())
+          .run();
+        return json({ ok: true, id: body.id }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/payment-methods" && method === "GET") {
+      const { results } = await env.openclaw_pos.prepare(`SELECT * FROM payment_methods ORDER BY created_at DESC LIMIT 200`).all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/payment-methods" && method === "POST") {
+      const body = await readJson<{ id?: string; method_code?: string; display_name?: string; settlement_mode?: string; is_active?: number }>(request);
+      if (!body?.id || !body.method_code || !body.display_name || !body.settlement_mode) {
+        return badRequest("Required fields: id, method_code, display_name, settlement_mode");
+      }
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO payment_methods (id, method_code, display_name, settlement_mode, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+          .bind(body.id, body.method_code, body.display_name, body.settlement_mode, body.is_active ?? 1, nowIso(), nowIso())
+          .run();
+        return json({ ok: true, id: body.id }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/sync-outbox" && method === "GET") {
+      const { results } = await env.openclaw_pos
+        .prepare(`SELECT * FROM sync_outbox ORDER BY created_at ASC LIMIT 500`)
+        .all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/sync-outbox" && method === "POST") {
+      const body = await readJson<{ id?: string; source_node?: string; entity_type?: string; entity_id?: string; operation_type?: string; payload_json?: string; idempotency_key?: string; status?: string }>(request);
+      if (!body?.id || !body.source_node || !body.entity_type || !body.entity_id || !body.operation_type || !body.payload_json || !body.idempotency_key) {
+        return badRequest("Required fields: id, source_node, entity_type, entity_id, operation_type, payload_json, idempotency_key");
+      }
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO sync_outbox (id, source_node, entity_type, entity_id, operation_type, payload_json, idempotency_key, status, retry_count, next_retry_at, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?)`)
+          .bind(body.id, body.source_node, body.entity_type, body.entity_id, body.operation_type, body.payload_json, body.idempotency_key, body.status ?? "queued", nowIso(), nowIso())
+          .run();
+        return json({ ok: true, id: body.id }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/sync-conflicts" && method === "GET") {
+      const { results } = await env.openclaw_pos
+        .prepare(`SELECT * FROM sync_conflicts ORDER BY created_at DESC LIMIT 200`)
+        .all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/sync-conflicts" && method === "POST") {
+      const body = await readJson<{ id?: string; outbox_id?: string | null; entity_type?: string; entity_id?: string; conflict_reason?: string; local_payload_json?: string; remote_payload_json?: string; resolution_strategy?: string }>(request);
+      if (!body?.id || !body.entity_type || !body.entity_id || !body.conflict_reason || !body.local_payload_json || !body.remote_payload_json || !body.resolution_strategy) {
+        return badRequest("Required fields: id, entity_type, entity_id, conflict_reason, local_payload_json, remote_payload_json, resolution_strategy");
+      }
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO sync_conflicts (id, outbox_id, entity_type, entity_id, conflict_reason, local_payload_json, remote_payload_json, resolution_strategy, resolved_at, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?)`)
+          .bind(body.id, body.outbox_id ?? null, body.entity_type, body.entity_id, body.conflict_reason, body.local_payload_json, body.remote_payload_json, body.resolution_strategy, nowIso())
+          .run();
+        return json({ ok: true, id: body.id }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/app-config" && method === "GET") {
+      const { results } = await env.openclaw_pos.prepare(`SELECT * FROM app_config ORDER BY key_name ASC LIMIT 500`).all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/app-config" && method === "POST") {
+      const body = await readJson<{ key_name?: string; value_json?: string; scope?: string }>(request);
+      if (!body?.key_name || !body.value_json) return badRequest("Required fields: key_name, value_json");
+
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO app_config (key_name, value_json, scope, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT(key_name) DO UPDATE SET value_json=excluded.value_json, scope=excluded.scope, updated_at=excluded.updated_at`)
+          .bind(body.key_name, body.value_json, body.scope ?? "global", nowIso(), nowIso())
+          .run();
+        return json({ ok: true, key_name: body.key_name }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Upsert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/seed/demo-branch" && method === "POST") {
+      const rootId = "demo-ho-pk";
+      const branchId = "demo-branch-khi-01";
+      const tillId = "demo-till-khi-01";
+      const employeeId = "demo-emp-khi-01";
+      const customerId = "demo-cus-cash-01";
+      const itemId = "demo-item-chai-01";
+      const priceId = "demo-price-chai-pkr";
+
+      try {
+        await env.openclaw_pos.batch([
+          env.openclaw_pos.prepare(`INSERT OR IGNORE INTO org_units (id, parent_id, unit_type, code, name, country_code, currency_code, is_active, created_at, updated_at) VALUES (?, NULL, 'country', 'PK-HO', 'Pakistan HO', 'PK', 'PKR', 1, ?, ?)`)
+            .bind(rootId, nowIso(), nowIso()),
+          env.openclaw_pos.prepare(`INSERT OR IGNORE INTO org_units (id, parent_id, unit_type, code, name, country_code, currency_code, is_active, created_at, updated_at) VALUES (?, ?, 'branch', 'KHI-01', 'Karachi Branch 01', 'PK', 'PKR', 1, ?, ?)`)
+            .bind(branchId, rootId, nowIso(), nowIso()),
+          env.openclaw_pos.prepare(`INSERT OR IGNORE INTO org_units (id, parent_id, unit_type, code, name, country_code, currency_code, is_active, created_at, updated_at) VALUES (?, ?, 'till', 'KHI-01-T1', 'Karachi Till 1', 'PK', 'PKR', 1, ?, ?)`)
+            .bind(tillId, branchId, nowIso(), nowIso()),
+          env.openclaw_pos.prepare(`INSERT OR IGNORE INTO employees (id, employee_code, full_name, employment_type, country_code, legal_entity_id, branch_id, is_active, created_at, updated_at) VALUES (?, 'EMP-KHI-001', 'Demo Cashier', 'permanent', 'PK', NULL, ?, 1, ?, ?)`)
+            .bind(employeeId, branchId, nowIso(), nowIso()),
+          env.openclaw_pos.prepare(`INSERT OR IGNORE INTO customers (id, customer_code, full_name, phone, email, loyalty_tier, is_active, created_at, updated_at) VALUES (?, 'CASH-001', 'Walk-in Customer', NULL, NULL, 'standard', 1, ?, ?)`)
+            .bind(customerId, nowIso(), nowIso()),
+          env.openclaw_pos.prepare(`INSERT OR IGNORE INTO inventory_items (id, sku_code, item_name, uom, branch_id, quantity_on_hand, reorder_level, is_active, created_at, updated_at) VALUES (?, 'TEA-CHAI-001', 'Tea / Chai Cup', 'ea', ?, 250, 40, 1, ?, ?)`)
+            .bind(itemId, branchId, nowIso(), nowIso()),
+          env.openclaw_pos.prepare(`INSERT OR IGNORE INTO pricing_rules (id, sku_code, country_code, currency_code, price_list, base_price, valid_from, valid_to, is_active, created_at, updated_at) VALUES (?, 'TEA-CHAI-001', 'PK', 'PKR', 'retail-default', 120, NULL, NULL, 1, ?, ?)`)
+            .bind(priceId, nowIso(), nowIso()),
+          env.openclaw_pos.prepare(`INSERT OR IGNORE INTO payment_methods (id, method_code, display_name, settlement_mode, is_active, created_at, updated_at) VALUES ('demo-pay-cash', 'cash', 'Cash', 'instant', 1, ?, ?)`)
+            .bind(nowIso(), nowIso()),
+          env.openclaw_pos.prepare(`INSERT OR IGNORE INTO tax_rules (id, rule_code, country_code, tax_name, tax_rate, tax_mode, is_active, created_at, updated_at) VALUES ('demo-tax-pk-sales', 'PK-SALES-DEFAULT', 'PK', 'Sales Tax', 0.18, 'inclusive', 1, ?, ?)`)
+            .bind(nowIso(), nowIso()),
+          env.openclaw_pos.prepare(`INSERT INTO app_config (key_name, value_json, scope, created_at, updated_at) VALUES ('tax.default_mode', '"inclusive"', 'country:PK', ?, ?) ON CONFLICT(key_name) DO UPDATE SET value_json='"inclusive"', scope='country:PK', updated_at=excluded.updated_at`)
+            .bind(nowIso(), nowIso()),
+          env.openclaw_pos.prepare(`INSERT INTO app_config (key_name, value_json, scope, created_at, updated_at) VALUES ('currency.operational', '"PKR"', 'country:PK', ?, ?) ON CONFLICT(key_name) DO UPDATE SET value_json='"PKR"', scope='country:PK', updated_at=excluded.updated_at`)
+            .bind(nowIso(), nowIso()),
+          env.openclaw_pos.prepare(`INSERT INTO app_config (key_name, value_json, scope, created_at, updated_at) VALUES ('currency.reporting', '"USD"', 'global', ?, ?) ON CONFLICT(key_name) DO UPDATE SET value_json='"USD"', scope='global', updated_at=excluded.updated_at`)
+            .bind(nowIso(), nowIso()),
+        ]);
+
+        return json({ ok: true, seeded: true, branch: "KHI-01", tills: 1, currency: "PKR", tax_mode: "inclusive" }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Seed failed", detail: String(e) }, 400);
+      }
+    }
+
     // Shopify/Amazon webhook ingest (minimal canonical order creation)
     if ((path === "/v1/connectors/shopify/order-webhook" || path === "/v1/connectors/amazon/order-webhook") && method === "POST") {
-      const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+      const body = await readJson<Record<string, unknown>>(request);
       if (!body) return badRequest("Invalid JSON body");
 
       const connector = path.includes("shopify") ? "shopify" : "amazon";
