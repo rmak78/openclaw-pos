@@ -112,6 +112,10 @@ Also planned/expanding:
 - `GET/POST /v1/variance-reasons`
 - `GET/POST /v1/inventory-movements`
 - `GET/POST /v1/branch-reconciliations`
+- `GET/POST /v1/suppliers`
+- `GET/POST /v1/purchase-orders`
+- `POST /v1/purchase-orders/transition`
+- `GET /v1/purchase-orders/summary`
 - `POST /v1/seed/demo-branch`
 - `POST /v1/connectors/shopify/order-webhook`
 - `POST /v1/connectors/amazon/order-webhook`
@@ -204,6 +208,7 @@ Latest delivered progress:
 - Core module APIs now live for customers, inventory, pricing, tax, and payments
 - Offline sync baseline added with outbox + conflict queues
 - Pakistan-first config baseline added (`tax.default_mode`, `currency.operational=PKR`, `currency.reporting=USD`)
+- Procurement baseline added: supplier payment terms, PO status transitions (`draft → approved → issued → received → closed`), and PO summary endpoint (`0007_procurement_po_lifecycle.sql`)
 - Demo seed endpoint included for a Karachi branch + till setup (`/v1/seed/demo-branch`)
 
 Foundations are live, docs are expanding rapidly, and country packs are being generated in parallel.

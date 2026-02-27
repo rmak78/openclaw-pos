@@ -67,6 +67,9 @@ export default {
           "GET/POST /v1/variance-reasons",
           "GET/POST /v1/inventory-movements",
           "GET/POST /v1/branch-reconciliations",
+          "GET/POST /v1/payroll-run-lines",
+          "POST /v1/payroll-runs/calculate-preview",
+          "POST /v1/payroll-runs/mark-processed",
           "POST /v1/seed/demo-branch",
           "POST /v1/connectors/shopify/order-webhook",
           "POST /v1/connectors/amazon/order-webhook"
@@ -100,7 +103,7 @@ export default {
           core: ["org-units", "employees", "orders", "shipments"],
           commerce: ["channels", "channel-accounts", "shopify-webhook", "amazon-webhook"],
           newToday: ["customers", "inventory", "pricing", "tax", "payments", "offline-sync"],
-          financeOps: ["sales-posting", "inventory-movements", "branch-reconciliation", "payment-split", "day-close-summary", "till-session", "cash-drop", "variance-reason-codes"]
+          financeOps: ["sales-posting", "inventory-movements", "branch-reconciliation", "payment-split", "day-close-summary", "till-session", "cash-drop", "variance-reason-codes", "payroll-run-lines", "payroll-run-preview", "payroll-run-process"]
         }
       });
     }
@@ -129,6 +132,9 @@ export default {
       "/v1/variance-reasons",
       "/v1/inventory-movements",
       "/v1/branch-reconciliations",
+      "/v1/return-reason-codes",
+      "/v1/sales-returns",
+      "/v1/refunds",
       "/v1/seed/demo-branch",
       "/v1/connectors/shopify/order-webhook",
       "/v1/connectors/amazon/order-webhook",
