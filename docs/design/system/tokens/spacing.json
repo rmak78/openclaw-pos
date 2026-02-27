@@ -1,0 +1,14 @@
+{
+  "$schema": "https://example.com/design-token.schema.json",
+  "meta": { "version": "0.1.0", "description": "OpenClaw POS spacing and layout primitives" },
+  "space": { "0": 0, "1": 4, "2": 8, "3": 12, "4": 16, "5": 20, "6": 24, "8": 32, "10": 40, "12": 48, "16": 64 },
+  "radius": { "none": 0, "sm": 4, "md": 8, "lg": 12, "xl": 16, "full": 9999 },
+  "borderWidth": { "none": 0, "thin": 1, "thick": 2 },
+  "shadow": {
+    "0": "none",
+    "1": "0 1px 2px rgba(15, 23, 42, 0.08)",
+    "2": "0 4px 8px rgba(15, 23, 42, 0.12)",
+    "3": "0 10px 20px rgba(15, 23, 42, 0.16)"
+  },
+  "layout": { "containerMaxWidth": 1280, "sidebarWidth": 280, "headerHeight": 64, "touchTargetMin": 44 }
+}

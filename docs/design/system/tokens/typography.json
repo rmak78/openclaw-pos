@@ -1,0 +1,28 @@
+{
+  "$schema": "https://example.com/design-token.schema.json",
+  "meta": { "version": "0.1.0", "description": "OpenClaw POS typography tokens" },
+  "fontFamily": {
+    "sansLatin": "Inter, Roboto, 'Helvetica Neue', Arial, sans-serif",
+    "sansArabic": "'Noto Naskh Arabic', 'Noto Sans Arabic', Tahoma, sans-serif",
+    "sansUrdu": "'Noto Nastaliq Urdu', 'Noto Sans Arabic', Tahoma, sans-serif"
+  },
+  "fontWeight": { "regular": 400, "medium": 500, "semibold": 600, "bold": 700 },
+  "lineHeight": { "tight": 1.2, "normal": 1.4, "relaxed": 1.6 },
+  "type": {
+    "heading": {
+      "xl": { "size": 32, "weight": "bold", "lineHeight": "tight" },
+      "lg": { "size": 24, "weight": "semibold", "lineHeight": "tight" },
+      "md": { "size": 20, "weight": "semibold", "lineHeight": "normal" }
+    },
+    "body": {
+      "lg": { "size": 16, "weight": "regular", "lineHeight": "relaxed" },
+      "md": { "size": 14, "weight": "regular", "lineHeight": "normal" },
+      "sm": { "size": 12, "weight": "regular", "lineHeight": "normal" }
+    },
+    "label": {
+      "lg": { "size": 16, "weight": "medium", "lineHeight": "normal" },
+      "md": { "size": 14, "weight": "medium", "lineHeight": "normal" },
+      "sm": { "size": 12, "weight": "medium", "lineHeight": "normal" }
+    }
+  }
+}
