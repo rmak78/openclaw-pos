@@ -67,6 +67,9 @@ export default {
           "GET/POST /v1/variance-reasons",
           "GET/POST /v1/inventory-movements",
           "GET/POST /v1/branch-reconciliations",
+          "GET/POST /v1/return-reason-codes",
+          "GET/POST /v1/sales-returns",
+          "GET/POST /v1/refunds",
           "GET/POST /v1/payroll-run-lines",
           "POST /v1/payroll-runs/calculate-preview",
           "POST /v1/payroll-runs/mark-processed",
@@ -103,7 +106,7 @@ export default {
           core: ["org-units", "employees", "orders", "shipments"],
           commerce: ["channels", "channel-accounts", "shopify-webhook", "amazon-webhook"],
           newToday: ["customers", "inventory", "pricing", "tax", "payments", "offline-sync"],
-          financeOps: ["sales-posting", "inventory-movements", "branch-reconciliation", "payment-split", "day-close-summary", "till-session", "cash-drop", "variance-reason-codes", "payroll-run-lines", "payroll-run-preview", "payroll-run-process"]
+          financeOps: ["sales-posting", "inventory-movements", "branch-reconciliation", "payment-split", "day-close-summary", "till-session", "cash-drop", "variance-reason-codes", "return-reason-codes", "sales-returns", "refund-method-tracking", "payroll-run-lines", "payroll-run-preview", "payroll-run-process"]
         }
       });
     }
@@ -135,6 +138,9 @@ export default {
       "/v1/return-reason-codes",
       "/v1/sales-returns",
       "/v1/refunds",
+      "/v1/payroll-run-lines",
+      "/v1/payroll-runs/calculate-preview",
+      "/v1/payroll-runs/mark-processed",
       "/v1/seed/demo-branch",
       "/v1/connectors/shopify/order-webhook",
       "/v1/connectors/amazon/order-webhook",
@@ -884,6 +890,294 @@ export default {
           .run();
 
         return json({ ok: true, id: body.id, variance_amount: variance, status }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/suppliers" && method === "GET") {
+      const { results } = await env.openclaw_pos
+        .prepare(`SELECT * FROM suppliers ORDER BY created_at DESC LIMIT 300`)
+        .all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/suppliers" && method === "POST") {
+      const body = await readJson<{
+        id?: string; supplier_code?: string; supplier_name?: string;
+        payment_terms_days?: number; payment_terms_note?: string | null; is_active?: number;
+      }>(request);
+
+      if (!body?.id || !body.supplier_code || !body.supplier_name) {
+        return badRequest("Required fields: id, supplier_code, supplier_name");
+      }
+
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO suppliers (id, supplier_code, supplier_name, payment_terms_days, payment_terms_note, is_active, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+          .bind(body.id, body.supplier_code, body.supplier_name, body.payment_terms_days ?? 0, body.payment_terms_note ?? null, body.is_active ?? 1, nowIso(), nowIso())
+          .run();
+
+        return json({ ok: true, id: body.id }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/purchase-orders" && method === "GET") {
+      const { results } = await env.openclaw_pos
+        .prepare(`SELECT po.*, s.supplier_code, s.supplier_name, s.payment_terms_days, s.payment_terms_note
+                  FROM purchase_orders po
+                  LEFT JOIN suppliers s ON s.id = po.supplier_id
+                  ORDER BY po.created_at DESC LIMIT 300`)
+        .all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/purchase-orders" && method === "POST") {
+      const body = await readJson<{
+        id?: string; po_code?: string; supplier_id?: string; branch_id?: string | null; currency_code?: string;
+        subtotal_amount?: number; tax_amount?: number; total_amount?: number; notes?: string | null;
+      }>(request);
+
+      if (!body?.id || !body.po_code || !body.supplier_id || !body.currency_code) {
+        return badRequest("Required fields: id, po_code, supplier_id, currency_code");
+      }
+
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO purchase_orders (id, po_code, supplier_id, branch_id, currency_code, subtotal_amount, tax_amount, total_amount, status, notes, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?)`)
+          .bind(body.id, body.po_code, body.supplier_id, body.branch_id ?? null, body.currency_code, body.subtotal_amount ?? 0, body.tax_amount ?? 0, body.total_amount ?? 0, body.notes ?? null, nowIso(), nowIso())
+          .run();
+
+        await env.openclaw_pos
+          .prepare(`INSERT INTO purchase_order_status_events (id, purchase_order_id, from_status, to_status, transition_note, created_at)
+                    VALUES (?, ?, NULL, 'draft', 'PO created', ?)`)
+          .bind(crypto.randomUUID(), body.id, nowIso())
+          .run();
+
+        return json({ ok: true, id: body.id, status: "draft" }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/purchase-orders/transition" && method === "POST") {
+      const body = await readJson<{ purchase_order_id?: string; to_status?: string; transition_note?: string | null }>(request);
+      if (!body?.purchase_order_id || !body.to_status) {
+        return badRequest("Required fields: purchase_order_id, to_status");
+      }
+
+      const allowed: Record<string, string[]> = {
+        draft: ["approved"],
+        approved: ["issued"],
+        issued: ["received"],
+        received: ["closed"],
+        closed: [],
+      };
+
+      const current = await env.openclaw_pos
+        .prepare(`SELECT id, status FROM purchase_orders WHERE id = ?`)
+        .bind(body.purchase_order_id)
+        .first<{ id: string; status: string }>();
+
+      if (!current) {
+        return json({ ok: false, error: "Purchase order not found", purchase_order_id: body.purchase_order_id }, 404);
+      }
+
+      const nextAllowed = allowed[current.status] ?? [];
+      if (!nextAllowed.includes(body.to_status)) {
+        return json({ ok: false, error: "Invalid status transition", from_status: current.status, to_status: body.to_status, allowed_to_status: nextAllowed }, 400);
+      }
+
+      const stamp = nowIso();
+      try {
+        await env.openclaw_pos
+          .prepare(`UPDATE purchase_orders
+                    SET status = ?,
+                        approved_at = CASE WHEN ? = 'approved' THEN ? ELSE approved_at END,
+                        issued_at = CASE WHEN ? = 'issued' THEN ? ELSE issued_at END,
+                        received_at = CASE WHEN ? = 'received' THEN ? ELSE received_at END,
+                        closed_at = CASE WHEN ? = 'closed' THEN ? ELSE closed_at END,
+                        updated_at = ?
+                    WHERE id = ?`)
+          .bind(body.to_status, body.to_status, stamp, body.to_status, stamp, body.to_status, stamp, body.to_status, stamp, stamp, body.purchase_order_id)
+          .run();
+
+        await env.openclaw_pos
+          .prepare(`INSERT INTO purchase_order_status_events (id, purchase_order_id, from_status, to_status, transition_note, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?)`)
+          .bind(crypto.randomUUID(), body.purchase_order_id, current.status, body.to_status, body.transition_note ?? null, stamp)
+          .run();
+
+        return json({ ok: true, purchase_order_id: body.purchase_order_id, from_status: current.status, status: body.to_status });
+      } catch (e) {
+        return json({ ok: false, error: "Transition failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/purchase-orders/summary" && method === "GET") {
+      const grouped = await env.openclaw_pos
+        .prepare(`SELECT status, COUNT(*) AS count, ROUND(COALESCE(SUM(total_amount), 0), 2) AS total_amount
+                  FROM purchase_orders
+                  GROUP BY status
+                  ORDER BY status`)
+        .all();
+
+      const totals = await env.openclaw_pos
+        .prepare(`SELECT COUNT(*) AS po_count, ROUND(COALESCE(SUM(total_amount), 0), 2) AS total_amount FROM purchase_orders`)
+        .first<{ po_count: number; total_amount: number }>();
+
+      return json({
+        ok: true,
+        summary: {
+          total_purchase_orders: Number(totals?.po_count ?? 0),
+          total_amount: Number(totals?.total_amount ?? 0),
+          by_status: grouped.results ?? [],
+        },
+      });
+    }
+
+    if (path === "/v1/payroll-run-lines" && method === "GET") {
+      const { results } = await env.openclaw_pos.prepare(`SELECT * FROM payroll_run_lines ORDER BY created_at DESC LIMIT 500`).all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/payroll-run-lines" && method === "POST") {
+      const body = await readJson<{ id?: string; payroll_run_id?: string; employee_id?: string; component_code?: string; component_type?: string; calc_mode?: string; input_value?: number; computed_amount?: number; currency_code?: string; notes?: string | null }>(request);
+      if (!body?.id || !body.payroll_run_id || !body.employee_id || !body.component_code || !body.component_type || !body.calc_mode || body.computed_amount === undefined || !body.currency_code) return badRequest("Required fields: id, payroll_run_id, employee_id, component_code, component_type, calc_mode, computed_amount, currency_code");
+      try {
+        await env.openclaw_pos.prepare(`INSERT INTO payroll_run_lines (id, payroll_run_id, employee_id, component_code, component_type, calc_mode, input_value, computed_amount, currency_code, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(body.id, body.payroll_run_id, body.employee_id, body.component_code, body.component_type, body.calc_mode, body.input_value ?? null, body.computed_amount, body.currency_code, body.notes ?? null, nowIso(), nowIso()).run();
+        return json({ ok: true, id: body.id }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/payroll-runs/calculate-preview" && method === "POST") {
+      const body = await readJson<{ payroll_run_id?: string; employee_id?: string; base_pay?: number; currency_code?: string; components?: Array<{ component_code?: string; component_type?: string; calc_mode?: string; amount?: number; rate_percent?: number; base_ref?: string }> }>(request);
+      if (!body?.payroll_run_id || !body?.employee_id || body.base_pay === undefined || !Array.isArray(body.components)) return badRequest("Required fields: payroll_run_id, employee_id, base_pay, components[]");
+      const basePay = Number(body.base_pay) || 0;
+      let earnings = basePay, deductions = 0, employerCost = 0;
+      const computed = body.components.map((c) => {
+        const mode = c.calc_mode ?? "fixed";
+        const type = c.component_type ?? "earning";
+        const amount = mode === "percentage" ? (((c.base_ref === "gross" ? earnings : basePay) * Number(c.rate_percent ?? 0)) / 100) : Number(c.amount ?? 0);
+        if (type === "deduction") deductions += amount; else if (type === "employer_cost") employerCost += amount; else earnings += amount;
+        return { component_code: c.component_code ?? null, component_type: type, calc_mode: mode, computed_amount: Number(amount.toFixed(2)) };
+      });
+      return json({ ok: true, payroll_run_id: body.payroll_run_id, employee_id: body.employee_id, currency_code: body.currency_code ?? "PKR", preview: { base_pay: Number(basePay.toFixed(2)), earnings: Number(earnings.toFixed(2)), deductions: Number(deductions.toFixed(2)), employer_cost: Number(employerCost.toFixed(2)), net_pay: Number((earnings - deductions).toFixed(2)), components: computed } });
+    }
+
+    if (path === "/v1/payroll-runs/mark-processed" && method === "POST") {
+      const body = await readJson<{ payroll_run_id?: string; notes?: string | null }>(request);
+      if (!body?.payroll_run_id) return badRequest("Required fields: payroll_run_id");
+      try {
+        const result = await env.openclaw_pos.prepare(`UPDATE payroll_runs SET status = 'processed', notes = COALESCE(?, notes), updated_at = ? WHERE id = ?`).bind(body.notes ?? null, nowIso(), body.payroll_run_id).run();
+        const updated = Number((result as { meta?: { changes?: number } })?.meta?.changes ?? 0);
+        if (updated === 0) return json({ ok: false, error: "Payroll run not found", payroll_run_id: body.payroll_run_id }, 404);
+        return json({ ok: true, payroll_run_id: body.payroll_run_id, status: "processed" });
+      } catch (e) {
+        return json({ ok: false, error: "Update failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/return-reason-codes" && method === "GET") {
+      const { results } = await env.openclaw_pos
+        .prepare(`SELECT * FROM return_reason_codes ORDER BY code ASC LIMIT 300`)
+        .all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/return-reason-codes" && method === "POST") {
+      const body = await readJson<{ code?: string; name?: string; description?: string | null; is_active?: number }>(request);
+      if (!body?.code || !body.name) return badRequest("Required fields: code, name");
+
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO return_reason_codes (code, name, description, is_active, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?)`)
+          .bind(body.code, body.name, body.description ?? null, body.is_active ?? 1, nowIso(), nowIso())
+          .run();
+        return json({ ok: true, code: body.code }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/sales-returns" && method === "GET") {
+      const { results } = await env.openclaw_pos
+        .prepare(`SELECT * FROM sales_returns ORDER BY created_at DESC LIMIT 300`)
+        .all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/sales-returns" && method === "POST") {
+      const body = await readJson<{
+        id?: string; return_no?: string; original_sales_receipt_id?: string; branch_id?: string;
+        return_reason_code?: string; approval_status?: string; approved_by_employee_id?: string | null;
+        approved_at?: string | null; return_status?: string; notes?: string | null; created_by_employee_id?: string | null;
+      }>(request);
+      if (!body?.id || !body.return_no || !body.original_sales_receipt_id || !body.branch_id || !body.return_reason_code) {
+        return badRequest("Required fields: id, return_no, original_sales_receipt_id, branch_id, return_reason_code");
+      }
+
+      const approvalStatus = body.approval_status ?? "pending";
+      if (!["pending", "approved", "rejected"].includes(approvalStatus)) {
+        return badRequest("approval_status must be one of pending|approved|rejected");
+      }
+
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO sales_returns (id, return_no, original_sales_receipt_id, branch_id, return_reason_code, approval_status, approved_by_employee_id, approved_at, return_status, notes, created_by_employee_id, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+          .bind(
+            body.id, body.return_no, body.original_sales_receipt_id, body.branch_id, body.return_reason_code,
+            approvalStatus, body.approved_by_employee_id ?? null,
+            body.approved_at ?? (approvalStatus === "approved" ? nowIso() : null),
+            body.return_status ?? "draft", body.notes ?? null, body.created_by_employee_id ?? null, nowIso(), nowIso()
+          )
+          .run();
+        return json({ ok: true, id: body.id, approval_status: approvalStatus }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/refunds" && method === "GET") {
+      const { results } = await env.openclaw_pos
+        .prepare(`SELECT * FROM refunds ORDER BY refunded_at DESC LIMIT 300`)
+        .all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/refunds" && method === "POST") {
+      const body = await readJson<{
+        id?: string; sales_return_id?: string; refund_method_id?: string; refund_amount?: number;
+        refund_status?: string; reference_no?: string | null; refunded_at?: string | null; created_by_employee_id?: string | null;
+      }>(request);
+      if (!body?.id || !body.sales_return_id || !body.refund_method_id || body.refund_amount === undefined) {
+        return badRequest("Required fields: id, sales_return_id, refund_method_id, refund_amount");
+      }
+
+      const refundStatus = body.refund_status ?? "processed";
+      if (!["pending", "processed", "failed", "reversed"].includes(refundStatus)) {
+        return badRequest("refund_status must be one of pending|processed|failed|reversed");
+      }
+
+      try {
+        await env.openclaw_pos.batch([
+          env.openclaw_pos
+            .prepare(`INSERT INTO refunds (id, sales_return_id, refund_method_id, refund_amount, refund_status, reference_no, refunded_at, created_by_employee_id, created_at)
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+            .bind(body.id, body.sales_return_id, body.refund_method_id, body.refund_amount, refundStatus, body.reference_no ?? null, body.refunded_at ?? nowIso(), body.created_by_employee_id ?? null, nowIso()),
+          env.openclaw_pos
+            .prepare(`UPDATE sales_returns SET return_status = CASE WHEN ? = 'processed' THEN 'refunded' ELSE return_status END, updated_at = ? WHERE id = ?`)
+            .bind(refundStatus, nowIso(), body.sales_return_id),
+        ]);
+        return json({ ok: true, id: body.id, refund_status: refundStatus, refund_method_id: body.refund_method_id }, 201);
       } catch (e) {
         return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
       }
