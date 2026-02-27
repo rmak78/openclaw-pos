@@ -210,7 +210,16 @@ Key packs:
 - PR-driven workflow
 - CI + hygiene checks
 - Security workflow (CodeQL/Trivy baseline)
+- `Pages` workflow on `main` for production site deployment
+- `PR Web Preview` workflow for `web/**` changes with sticky PR comment + local fallback instructions
 - Config-first legal/statutory placeholders pending country confirmation
+
+## Delivery cadence (proposed)
+
+- **Daily merge window (Mon–Thu):** merge validated PRs in small batches to keep conflict risk low.
+- **Friday stability window:** bugfix/docs-only merges unless urgent.
+- **Weekly release cut (Fri evening PKT):** tag `vYYYY.MM.WW`, publish release notes, and validate Pages + API smoke checks.
+- **Monthly hardening pass:** clean stale branches/PRs, tighten required checks, and refresh security baseline.
 
 ---
 
