@@ -1,6 +1,429 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Branch Demo</title>
-<style>body{margin:0;font-family:Inter,system-ui;background:#0b1020;color:#eaf0ff}.wrap{max-width:1200px;margin:0 auto;padding:20px}.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.btn{background:#172447;border:1px solid #2b3a63;color:#fff;padding:8px 12px;border-radius:10px;text-decoration:none}.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:14px 0}.card{background:#111933;border:1px solid #2b3a63;border-radius:12px;padding:12px}.muted{color:#9fb0d1;font-size:12px}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #263559;text-align:left}th{color:#9fb0d1;font-weight:600}</style></head>
-<body><div class="wrap"><div class="top"><div><h1 style="margin:0">Branch Command Center</h1><div class="muted">Track tills, cash variance, returns, and shift closures in one place.</div></div><a class="btn" href="../index.html">← Demo Directory</a></div>
-<div class="kpi"><div class="card"><div class="muted">KPI 1</div><b>94.2%</b></div><div class="card"><div class="muted">KPI 2</div><b>PKR 12.4M</b></div><div class="card"><div class="muted">KPI 3</div><b>17 Alerts</b></div><div class="card"><div class="muted">KPI 4</div><b>On Track</b></div></div>
-<div class="card"><h3 style="margin-top:0">Operational Queue</h3><table><thead><tr><th>Item</th><th>Owner</th><th>Status</th><th>ETA</th></tr></thead><tbody><tr><td>Daily reconciliation batch</td><td>Ops</td><td>Running</td><td>18m</td></tr><tr><td>Approval pending</td><td>Finance</td><td>Waiting</td><td>42m</td></tr><tr><td>Critical exception</td><td>Audit</td><td>Investigate</td><td>Now</td></tr></tbody></table></div>
-</div></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Branch Operations Demo</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #111933;
+      --border: #2b3a63;
+      --muted: #9fb0d1;
+      --text: #eaf0ff;
+      --ok: #34d399;
+      --warn: #fbbf24;
+      --bad: #fb7185;
+      --info: #60a5fa;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.35;
+    }
+
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 20px; }
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    h1, h2, h3 { margin: 0; }
+    .muted { color: var(--muted); font-size: 12px; }
+
+    .btn {
+      background: #172447;
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 10px;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .btn:hover { border-color: #4860a0; }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      min-width: 0;
+    }
+
+    .kpi {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .kpi .value { font-size: 24px; font-weight: 700; margin-top: 4px; }
+
+    .timeline {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .timeline-item {
+      border: 1px solid #2c3c68;
+      border-radius: 10px;
+      padding: 8px;
+      display: grid;
+      grid-template-columns: 80px 1fr auto;
+      align-items: center;
+      gap: 10px;
+    }
+    .timeline-item.done { border-color: #226344; background: #0f2a20; }
+    .timeline-item.active { border-color: #2f5f9b; background: #10263f; }
+
+    .pill {
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 11px;
+      border: 1px solid currentColor;
+      display: inline-block;
+    }
+    .ok { color: var(--ok); }
+    .warn { color: var(--warn); }
+    .bad { color: var(--bad); }
+    .info { color: var(--info); }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { padding: 9px; border-bottom: 1px solid #263559; text-align: left; vertical-align: middle; }
+    th { color: var(--muted); font-weight: 600; font-size: 12px; }
+
+    .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .btn-small {
+      background: #162244;
+      border: 1px solid #2c3c68;
+      color: #fff;
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .checklist { display: grid; gap: 6px; margin-top: 8px; }
+    .check-item {
+      border: 1px solid #2c3c68;
+      border-radius: 8px;
+      padding: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .check-item.done { border-color: #226344; background: #0f2a20; }
+
+    .footer {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+      .timeline-item { grid-template-columns: 70px 1fr; }
+      .timeline-item > div:last-child { grid-column: 1 / -1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1>Branch Command Center</h1>
+        <div class="muted">Branch-level operations for today: timeline, tills, cash variances, returns, and day close.</div>
+      </div>
+      <a class="btn" href="../index.html">← Demo Directory</a>
+    </div>
+
+    <div class="kpi" id="kpiBar">
+      <div class="card"><div class="muted">Till Online</div><div class="value" id="kpiTill">0 / 0</div></div>
+      <div class="card"><div class="muted">Cash Variance Open</div><div class="value" id="kpiVariance">0</div></div>
+      <div class="card"><div class="muted">Returns Pending</div><div class="value" id="kpiReturns">0</div></div>
+      <div class="card"><div class="muted">Day-Close Readiness</div><div class="value" id="kpiClose">0%</div></div>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Branch Day Timeline</h2>
+        <div class="muted">Advance events to simulate branch progression.</div>
+        <div class="timeline" id="timeline"></div>
+        <div class="footer">
+          <button class="btn" id="advanceTimeline">Advance Timeline</button>
+          <span class="muted" id="timelineMeta"></span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Till Statuses</h2>
+        <div class="muted">Toggle till states and assign an owner to resolve exceptions.</div>
+        <table>
+          <thead><tr><th>Till</th><th>Cashier</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="tillsTable"></tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2>Cash Variance Queue</h2>
+        <div class="muted">Investigate first, then resolve or escalate.</div>
+        <table>
+          <thead><tr><th>Txn</th><th>Variance</th><th>Owner</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="varianceTable"></tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2>Returns Approval Queue</h2>
+        <div class="muted">Approve, reject, or send for review.</div>
+        <table>
+          <thead><tr><th>Return #</th><th>Reason</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="returnsTable"></tbody>
+        </table>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:12px;">
+      <h2>Day-Close Checklist</h2>
+      <div class="muted">All tasks must be complete before day-close can run.</div>
+      <div class="checklist" id="checklist"></div>
+      <div class="footer">
+        <button class="btn" id="runClose">Run Day Close</button>
+        <span id="closeMessage" class="muted"></span>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const state = {
+      timeline: [
+        { time: '08:00', title: 'Branch opened', status: 'done' },
+        { time: '10:30', title: 'Cash pickup completed', status: 'done' },
+        { time: '13:00', title: 'Midday till audit', status: 'active' },
+        { time: '16:30', title: 'Peak shift handover', status: 'pending' },
+        { time: '20:00', title: 'Day close + deposit', status: 'pending' }
+      ],
+      tills: [
+        { id: 'T-01', cashier: 'Aisha', status: 'online' },
+        { id: 'T-02', cashier: 'Bilal', status: 'offline' },
+        { id: 'T-03', cashier: 'Hina', status: 'recon-needed' },
+        { id: 'T-04', cashier: 'Saad', status: 'online' }
+      ],
+      variances: [
+        { id: 'TX-9182', amount: -1200, owner: 'Ops', status: 'open' },
+        { id: 'TX-9194', amount: 800, owner: 'Finance', status: 'investigating' },
+        { id: 'TX-9201', amount: -3500, owner: 'Ops', status: 'open' }
+      ],
+      returns: [
+        { id: 'R-2108', reason: 'Damaged box', amount: 4500, status: 'pending' },
+        { id: 'R-2113', reason: 'Wrong size', amount: 3200, status: 'review' },
+        { id: 'R-2116', reason: 'Expired SKU', amount: 2800, status: 'pending' }
+      ],
+      checklist: [
+        { id: 'shift-recon', label: 'All shifts reconciled', done: false },
+        { id: 'variance-clear', label: 'Cash variance queue cleared', done: false },
+        { id: 'returns-clear', label: 'Returns approvals completed', done: false },
+        { id: 'safe-drop', label: 'Safe drop verified', done: false }
+      ],
+      closed: false
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    const statusPill = (status, map) => {
+      const cfg = map[status] || { label: status, cls: 'info' };
+      return `<span class="pill ${cfg.cls}">${cfg.label}</span>`;
+    };
+
+    function renderTimeline() {
+      $('timeline').innerHTML = state.timeline.map((e) => {
+        return `<div class="timeline-item ${e.status}">
+          <div><strong>${e.time}</strong></div>
+          <div>${e.title}</div>
+          <div>${statusPill(e.status, {
+            done: { label: 'Completed', cls: 'ok' },
+            active: { label: 'In Progress', cls: 'info' },
+            pending: { label: 'Pending', cls: 'warn' }
+          })}</div>
+        </div>`;
+      }).join('');
+
+      const activeIndex = state.timeline.findIndex(t => t.status === 'active');
+      $('timelineMeta').textContent = activeIndex === -1
+        ? 'All timeline items completed.'
+        : `Current milestone: ${state.timeline[activeIndex].title}`;
+
+      $('advanceTimeline').disabled = state.timeline.every(t => t.status === 'done');
+    }
+
+    function renderTills() {
+      $('tillsTable').innerHTML = state.tills.map((t, i) => `
+        <tr>
+          <td>${t.id}</td>
+          <td>${t.cashier}</td>
+          <td>${statusPill(t.status, {
+            online: { label: 'Online', cls: 'ok' },
+            offline: { label: 'Offline', cls: 'bad' },
+            'recon-needed': { label: 'Recon Needed', cls: 'warn' }
+          })}</td>
+          <td class="actions">
+            <button class="btn-small" onclick="setTill(${i}, 'online')">Online</button>
+            <button class="btn-small" onclick="setTill(${i}, 'offline')">Offline</button>
+            <button class="btn-small" onclick="setTill(${i}, 'recon-needed')">Recon</button>
+          </td>
+        </tr>`).join('');
+    }
+
+    function renderVariances() {
+      $('varianceTable').innerHTML = state.variances.map((v, i) => `
+        <tr>
+          <td>${v.id}</td>
+          <td>${v.amount > 0 ? '+' : ''}${v.amount.toLocaleString()} PKR</td>
+          <td>${v.owner}</td>
+          <td>${statusPill(v.status, {
+            open: { label: 'Open', cls: 'bad' },
+            investigating: { label: 'Investigating', cls: 'warn' },
+            resolved: { label: 'Resolved', cls: 'ok' },
+            escalated: { label: 'Escalated', cls: 'info' }
+          })}</td>
+          <td class="actions">
+            <button class="btn-small" onclick="setVariance(${i}, 'investigating')">Investigate</button>
+            <button class="btn-small" onclick="setVariance(${i}, 'resolved')">Resolve</button>
+            <button class="btn-small" onclick="setVariance(${i}, 'escalated')">Escalate</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderReturns() {
+      $('returnsTable').innerHTML = state.returns.map((r, i) => `
+        <tr>
+          <td>${r.id}</td>
+          <td>${r.reason}</td>
+          <td>${r.amount.toLocaleString()} PKR</td>
+          <td>${statusPill(r.status, {
+            pending: { label: 'Pending', cls: 'warn' },
+            review: { label: 'Need Review', cls: 'info' },
+            approved: { label: 'Approved', cls: 'ok' },
+            rejected: { label: 'Rejected', cls: 'bad' }
+          })}</td>
+          <td class="actions">
+            <button class="btn-small" onclick="setReturn(${i}, 'approved')">Approve</button>
+            <button class="btn-small" onclick="setReturn(${i}, 'rejected')">Reject</button>
+            <button class="btn-small" onclick="setReturn(${i}, 'review')">Review</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderChecklist() {
+      $('checklist').innerHTML = state.checklist.map((c, i) => `
+        <div class="check-item ${c.done ? 'done' : ''}">
+          <div>
+            <strong>${c.label}</strong>
+            <div class="muted">${c.done ? 'Completed' : 'Pending'}</div>
+          </div>
+          <button class="btn-small" onclick="toggleCheck(${i})">${c.done ? 'Undo' : 'Mark Done'}</button>
+        </div>
+      `).join('');
+    }
+
+    function updateKPIs() {
+      const tillOnline = state.tills.filter(t => t.status === 'online').length;
+      const varianceOpen = state.variances.filter(v => v.status !== 'resolved').length;
+      const returnsPending = state.returns.filter(r => r.status !== 'approved' && r.status !== 'rejected').length;
+      const doneCount = state.checklist.filter(c => c.done).length;
+      const readiness = Math.round((doneCount / state.checklist.length) * 100);
+
+      $('kpiTill').textContent = `${tillOnline} / ${state.tills.length}`;
+      $('kpiVariance').textContent = varianceOpen;
+      $('kpiReturns').textContent = returnsPending;
+      $('kpiClose').textContent = `${readiness}%`;
+
+      $('runClose').disabled = !(doneCount === state.checklist.length && !state.closed);
+    }
+
+    function syncChecklistFromQueues() {
+      const varianceClear = state.variances.every(v => v.status === 'resolved');
+      const returnsClear = state.returns.every(r => r.status === 'approved' || r.status === 'rejected');
+
+      state.checklist.find(c => c.id === 'variance-clear').done = varianceClear;
+      state.checklist.find(c => c.id === 'returns-clear').done = returnsClear;
+    }
+
+    window.setTill = (idx, status) => {
+      state.tills[idx].status = status;
+      render();
+    };
+
+    window.setVariance = (idx, status) => {
+      state.variances[idx].status = status;
+      syncChecklistFromQueues();
+      render();
+    };
+
+    window.setReturn = (idx, status) => {
+      state.returns[idx].status = status;
+      syncChecklistFromQueues();
+      render();
+    };
+
+    window.toggleCheck = (idx) => {
+      const item = state.checklist[idx];
+      if (item.id === 'variance-clear' || item.id === 'returns-clear') return;
+      item.done = !item.done;
+      render();
+    };
+
+    $('advanceTimeline').addEventListener('click', () => {
+      const active = state.timeline.findIndex(t => t.status === 'active');
+      if (active !== -1) {
+        state.timeline[active].status = 'done';
+        if (state.timeline[active + 1]) state.timeline[active + 1].status = 'active';
+      } else {
+        const firstPending = state.timeline.find(t => t.status === 'pending');
+        if (firstPending) firstPending.status = 'active';
+      }
+      render();
+    });
+
+    $('runClose').addEventListener('click', () => {
+      state.closed = true;
+      $('closeMessage').textContent = 'Day close completed and deposit batch prepared.';
+      $('runClose').disabled = true;
+    });
+
+    function render() {
+      renderTimeline();
+      renderTills();
+      renderVariances();
+      renderReturns();
+      renderChecklist();
+      updateKPIs();
+    }
+
+    syncChecklistFromQueues();
+    render();
+  </script>
+</body>
+</html>

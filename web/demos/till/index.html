@@ -4,119 +4,373 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OpenClaw POS — Till Demo</title>
+  <link rel="preconnect" href="https://images.unsplash.com" />
   <style>
-    :root{--bg:#0b1020;--panel:#111933;--muted:#9fb0d1;--text:#eaf0ff;--brand:#4cc9f0;--ok:#22c55e;--warn:#f59e0b;--line:#2b3a63}
-    *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#0a1020,#0d1428);color:var(--text);font-family:Inter,system-ui,Arial}
-    .wrap{max-width:1280px;margin:0 auto;padding:16px}
-    .top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
-    .badge{background:#0f1a36;border:1px solid var(--line);padding:6px 10px;border-radius:999px;color:#c8d4f2;font-size:12px}
-    .grid{display:grid;grid-template-columns:2fr 1fr;gap:12px}
-    .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
-    .products{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;max-height:72vh;overflow:auto;padding-right:4px}
-    .card{background:#0d1630;border:1px solid #27365e;border-radius:12px;padding:10px;cursor:pointer}
-    .card:hover{border-color:var(--brand)}
-    .name{font-weight:700;font-size:14px}.price{color:#95ffd0;font-weight:700}
-    input,select,button{font:inherit}
-    .search{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:#0b142c;color:var(--text);margin-bottom:10px}
-    .cart-list{max-height:40vh;overflow:auto}
-    .row{display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed #263459}
-    .qty{display:flex;align-items:center;gap:6px}.qty button{width:26px;height:26px;border-radius:8px;border:1px solid var(--line);background:#172447;color:#fff}
-    .btn{padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#172447;color:#fff;cursor:pointer}
-    .btn.primary{background:linear-gradient(90deg,#06b6d4,#3b82f6);border:none;font-weight:700}
-    .totals{margin-top:10px;font-size:14px}.totals div{display:flex;justify-content:space-between;padding:4px 0}
-    .grand{font-size:18px;font-weight:800;color:#95ffd0}
+    :root{
+      --bg:#080f1d;--panel:#111b36;--panel2:#0c152b;--line:#2f406e;--txt:#ebf1ff;--muted:#a9b9de;
+      --ok:#22c55e;--warn:#f59e0b;--bad:#ef4444;--brand:#38bdf8
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,Arial;background:radial-gradient(circle at top,#12214a 0,#0b1224 55%,#070d1a 100%);color:var(--txt)}
+    .wrap{max-width:1360px;margin:0 auto;padding:16px}
+    .top{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start}
+    .top h1{margin:0 0 4px;font-size:clamp(22px,3vw,30px)}
+    .sub{color:var(--muted);font-size:13px}
+    .badges{display:flex;gap:8px;flex-wrap:wrap}
+    .badge{padding:6px 10px;font-size:12px;border-radius:999px;border:1px solid var(--line);background:#101b38}
+
+    .hero{margin:12px 0;background:linear-gradient(110deg,rgba(9,17,38,.92),rgba(9,17,38,.72)),url('https://images.unsplash.com/photo-1556740738-b6a63e27c4df?auto=format&fit=crop&w=1400&q=80') center/cover;border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+    .hero .meta{font-size:13px;color:#d6e2ff}
+    .step{font-size:12px;background:rgba(56,189,248,.14);border:1px solid rgba(56,189,248,.5);padding:6px 9px;border-radius:999px}
+
+    .shift{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
+    .shift-grid{display:grid;grid-template-columns:1fr auto 1fr auto;gap:8px;align-items:end}
+    .f{display:grid;gap:4px}.f label{font-size:12px;color:var(--muted)}
+    input,button{font:inherit}
+    input{background:#0b142c;color:var(--txt);border:1px solid var(--line);padding:9px;border-radius:10px;min-height:38px}
+    .btn{min-height:38px;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:#172447;color:#fff;cursor:pointer}
+    .btn.primary{background:linear-gradient(90deg,#06b6d4,#2563eb);border:none;font-weight:700}
+    .btn.good{background:#123f2c;border-color:#1f6f4a}.btn.warn{background:#4d3412;border-color:#875d1d}
+    .btn:disabled{opacity:.55;cursor:not-allowed}
+
+    .layout{display:grid;grid-template-columns:2fr 1.1fr;gap:12px}
+    .panel{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:14px;padding:12px}
+
+    .catbar{display:flex;gap:8px;overflow:auto;padding-bottom:6px;margin-bottom:10px}
+    .cat{border:1px solid var(--line);background:#0e1833;color:#dbe6ff;padding:7px 10px;border-radius:999px;cursor:pointer;white-space:nowrap;font-size:12px}
+    .cat.active{background:#1a2a56;border-color:#4f6fbe}
+    .search{width:100%;margin-bottom:10px}
+    .products{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;max-height:56vh;overflow:auto}
+    .card{border:1px solid #2c3e69;border-radius:12px;background:#0d1630;overflow:hidden;cursor:pointer;transition:.15s}
+    .card:hover{transform:translateY(-2px);border-color:var(--brand)}
+    .thumb{height:88px;background-size:cover;background-position:center}
+    .pc{padding:9px}.name{font-weight:700;font-size:14px}.sku{font-size:12px;color:var(--muted)}.price{margin-top:4px;color:#9ef7cc;font-weight:700}
+
+    .cart{max-height:30vh;overflow:auto}
+    .row{display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed #29406f}
+    .qty{display:flex;align-items:center;gap:6px}.qty button{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:#172447;color:#fff;cursor:pointer}
+
+    .totals{margin-top:6px}.totals div{display:flex;justify-content:space-between;padding:3px 0;font-size:14px}
+    .grand{font-size:20px;font-weight:800;color:#9ef7cc;border-top:1px solid var(--line);padding-top:6px;margin-top:4px}
+    .pay{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
+    .hint{font-size:12px;color:var(--muted);margin-top:6px}.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
     .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
-    .receipt{white-space:pre-wrap;background:#0a1329;border:1px solid #22335c;border-radius:10px;padding:10px;font-size:12px;max-height:180px;overflow:auto;margin-top:10px}
-    @media(max-width:980px){.grid{grid-template-columns:1fr}}
+    .receipt{display:none;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;background:#0a1228;border:1px solid #263b66;border-radius:10px;padding:10px;max-height:240px;overflow:auto;margin-top:10px}
+    .credits{margin-top:10px;font-size:11px;color:#8ea3d3;line-height:1.45}
+
+    @media(max-width:1024px){.layout{grid-template-columns:1fr}.shift-grid{grid-template-columns:1fr 1fr}.products{max-height:42vh}}
+
+    @media print{
+      body{background:#fff;color:#111}
+      .no-print,.credits,#closeReport{display:none !important}
+      .wrap,.panel,.layout{all:unset}
+      #receipt{display:block !important;font-size:11pt;color:#111;padding:0;border:none;background:none;max-height:none}
+      @page{size:80mm auto;margin:4mm}
+    }
   </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="top">
-    <h2 style="margin:0">Till Demo — Fully Functional Checkout Flow</h2>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <span class="badge">Branch: KHI-01</span><span class="badge">Till: T1</span><span class="badge" id="clock"></span>
+  <div class="top no-print">
+    <div>
+      <h1>Till Demo — Full Counter Lifecycle</h1>
+      <div class="sub">Open shift → add categorized products → adjust qty/discount → split payment (cash/card/wallet) with change due → preview/print receipt → close shift with cash variance.</div>
+    </div>
+    <div class="badges">
+      <span class="badge">Branch: KHI-01</span>
+      <span class="badge">Till: T1</span>
+      <span class="badge" id="clock">--:--:--</span>
+      <span class="badge" id="shiftState">Shift CLOSED</span>
     </div>
   </div>
 
-  <div class="grid">
-    <section class="panel">
-      <input id="search" class="search" placeholder="Search product by name / SKU" />
-      <div class="products" id="products"></div>
+  <div class="hero no-print">
+    <div>
+      <div style="font-weight:700">Cashier Mode: Investor-ready demo flow</div>
+      <div class="meta" id="shiftSummary">Shift is closed. Open shift to begin.</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <span class="step">1 Open Shift</span><span class="step">2 Build Cart</span><span class="step">3 Split Payment</span><span class="step">4 Print</span><span class="step">5 Close Shift</span>
+    </div>
+  </div>
+
+  <section class="shift no-print">
+    <div class="shift-grid">
+      <div class="f"><label>Opening Float (Cash)</label><input id="openingFloat" type="number" min="0" value="3000"></div>
+      <button class="btn good" id="openBtn">Open Shift</button>
+      <div class="f"><label>Closing Cash Count</label><input id="cashCount" type="number" min="0" placeholder="Enter when closing"></div>
+      <button class="btn warn" id="closeBtn" disabled>Close Shift</button>
+    </div>
+  </section>
+
+  <div class="layout">
+    <section class="panel no-print">
+      <h3 style="margin:0 0 8px">Products</h3>
+      <div id="catbar" class="catbar"></div>
+      <input id="search" class="search" placeholder="Search by name or SKU">
+      <div id="products" class="products"></div>
     </section>
 
     <aside class="panel">
-      <h3 style="margin:4px 0 8px">Cart</h3>
-      <div class="cart-list" id="cartList"></div>
-      <div class="totals">
-        <div><span>Subtotal</span><b id="subtotal">0</b></div>
-        <div><span>Tax (18%)</span><b id="tax">0</b></div>
-        <div><span>Discount</span><b id="discount">0</b></div>
-        <div class="grand"><span>Total</span><span id="total">0</span></div>
+      <h3 class="no-print" style="margin:0 0 8px">Cart & Payments</h3>
+      <div class="cart no-print" id="cart"></div>
+      <div class="totals no-print">
+        <div><span>Subtotal</span><b id="subtotal">PKR 0</b></div>
+        <div><span>Tax (18%)</span><b id="tax">PKR 0</b></div>
+        <div><span>Discount</span><b id="discount">PKR 0</b></div>
+        <div class="grand"><span>Total</span><span id="total">PKR 0</span></div>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
-        <input id="discountInput" class="search" style="margin:0" type="number" min="0" value="0" placeholder="Discount" />
-        <select id="payment" class="search" style="margin:0"><option>Cash</option><option>Card</option><option>JazzCash</option><option>Bank Transfer</option></select>
+      <div class="no-print" style="margin-top:8px">
+        <div class="f"><label>Discount (PKR)</label><input id="discountInput" type="number" min="0" value="0"></div>
+        <div class="pay">
+          <div class="f"><label>Cash Split</label><input id="payCash" type="number" min="0" value="0"></div>
+          <div class="f"><label>Card Split</label><input id="payCard" type="number" min="0" value="0"></div>
+          <div class="f"><label>Wallet Split</label><input id="payWallet" type="number" min="0" value="0"></div>
+        </div>
+        <div class="f" style="margin-top:8px"><label>Cash Tendered</label><input id="cashTendered" type="number" min="0" value="0"></div>
+        <div id="splitStatus" class="hint warn">Split must match total exactly.</div>
+        <div id="changeStatus" class="hint">Change due: PKR 0</div>
       </div>
 
-      <div class="actions">
-        <button class="btn" id="clear">Clear</button>
-        <button class="btn primary" id="checkout">Complete Sale</button>
+      <div class="actions no-print">
+        <button class="btn" id="clearBtn">Clear Cart</button>
+        <button class="btn primary" id="saleBtn">Complete Sale</button>
+      </div>
+      <div class="actions no-print">
+        <button class="btn" id="previewBtn">Preview Receipt</button>
+        <button class="btn" id="printBtn">Print Receipt</button>
       </div>
 
-      <div id="receipt" class="receipt" style="display:none"></div>
+      <div id="receipt" class="receipt"></div>
+      <div id="closeReport" class="receipt no-print"></div>
+
+      <div class="credits no-print">
+        Assets: hero + food photos from Unsplash (free under Unsplash License). Credits listed in page source and PR notes.
+      </div>
     </aside>
   </div>
 </div>
+
 <script>
-const inventory=[
-  ['TEA-001','Karak Chai',120],['COF-002','Latte',280],['BRG-003','Chicken Burger',540],['FRY-004','Fries',250],['WTR-005','Mineral Water',90],
-  ['RIC-006','Chicken Biryani',460],['SND-007','Club Sandwich',420],['JUC-008','Fresh Orange Juice',300],['CKE-009','Chocolate Cake Slice',360],['ICE-010','Vanilla Ice Cream',220],
-  ['PIZ-011','Small Pizza',890],['SOU-012','Chicken Soup',330],['SAL-013','Caesar Salad',410],['BBQ-014','BBQ Wings',520],['TCK-015','Tikka Wrap',490]
-].map(([sku,name,price])=>({sku,name,price}));
-let cart={};
-const fmt=n=>`PKR ${n.toLocaleString()}`;
-const q=(id)=>document.getElementById(id);
-function now(){const d=new Date();q('clock').textContent=d.toLocaleTimeString()} setInterval(now,1000); now();
+  const TAX = 0.18;
+  const products = [
+    ['TEA-001','Karak Chai',120,'Beverages','https://images.unsplash.com/photo-1571934811356-5cc061b6821f?auto=format&fit=crop&w=700&q=70'],
+    ['COF-002','Latte',280,'Beverages','https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=700&q=70'],
+    ['WTR-005','Mineral Water',90,'Beverages','https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=700&q=70'],
+    ['JUC-008','Fresh Orange Juice',300,'Beverages','https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=700&q=70'],
 
-function renderProducts(){
-  const term=q('search').value.toLowerCase().trim();
-  q('products').innerHTML=inventory.filter(p=>!term||p.name.toLowerCase().includes(term)||p.sku.toLowerCase().includes(term)).map(p=>`
-    <div class='card' data-sku='${p.sku}'>
-      <div class='name'>${p.name}</div>
-      <div style='font-size:12px;color:#9fb0d1'>${p.sku}</div>
-      <div class='price'>${fmt(p.price)}</div>
-    </div>`).join('');
-  q('products').querySelectorAll('.card').forEach(c=>c.onclick=()=>add(c.dataset.sku));
-}
+    ['BRG-003','Chicken Burger',540,'Fast Food','https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=700&q=70'],
+    ['FRY-004','Fries',250,'Fast Food','https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=700&q=70'],
+    ['PIZ-011','Small Pizza',890,'Fast Food','https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=700&q=70'],
+    ['TCK-015','Tikka Wrap',490,'Fast Food','https://images.unsplash.com/photo-1648672751132-619a57e0a00b?auto=format&fit=crop&w=700&q=70'],
 
-function add(sku){cart[sku]=(cart[sku]||0)+1;renderCart()}
-function dec(sku){if(!cart[sku])return;cart[sku]--;if(cart[sku]<=0)delete cart[sku];renderCart()}
-function inc(sku){cart[sku]=(cart[sku]||0)+1;renderCart()}
+    ['RIC-006','Chicken Biryani',460,'Main Meals','https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=700&q=70'],
+    ['SND-007','Club Sandwich',420,'Main Meals','https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=700&q=70'],
+    ['SOU-012','Chicken Soup',330,'Main Meals','https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=700&q=70'],
+    ['SAL-013','Caesar Salad',410,'Main Meals','https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=700&q=70'],
 
-function renderCart(){
-  const items=Object.entries(cart).map(([sku,qty])=>({item:inventory.find(p=>p.sku===sku),qty}));
-  q('cartList').innerHTML=items.length?items.map(({item,qty})=>`<div class='row'><div><b>${item.name}</b><div style='font-size:12px;color:#9fb0d1'>${item.sku}</div></div><div class='qty'><button onclick="dec('${item.sku}')">-</button><b>${qty}</b><button onclick="inc('${item.sku}')">+</button></div><div>${fmt(item.price)}</div><div><b>${fmt(item.price*qty)}</b></div></div>`).join(''):'<div style="color:#9fb0d1">No items yet.</div>';
-  const subtotal=items.reduce((s,{item,qty})=>s+item.price*qty,0);
-  const discount=Math.max(0,Number(q('discountInput').value||0));
-  const tax=Math.round(subtotal*0.18);
-  const total=Math.max(0,subtotal+tax-discount);
-  q('subtotal').textContent=fmt(subtotal); q('tax').textContent=fmt(tax); q('discount').textContent=fmt(discount); q('total').textContent=fmt(total);
-}
+    ['CKE-009','Chocolate Cake Slice',360,'Desserts','https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=700&q=70'],
+    ['ICE-010','Vanilla Ice Cream',220,'Desserts','https://images.unsplash.com/photo-1488900128323-21503983a07e?auto=format&fit=crop&w=700&q=70'],
+    ['BBQ-014','BBQ Wings',520,'Specials','https://images.unsplash.com/photo-1527477396000-e27163b481c2?auto=format&fit=crop&w=700&q=70']
+  ].map(([sku,name,price,category,img])=>({sku,name,price,category,img}));
 
-q('search').addEventListener('input',renderProducts);
-q('discountInput').addEventListener('input',renderCart);
-q('clear').onclick=()=>{cart={};q('discountInput').value=0;q('receipt').style.display='none';renderCart();};
-q('checkout').onclick=()=>{
-  const items=Object.entries(cart); if(!items.length){alert('Add products first.'); return;}
-  const id='RCP-'+Date.now().toString().slice(-8);
-  const lines=items.map(([sku,qty])=>{const p=inventory.find(x=>x.sku===sku);return `${p.name} x${qty} = ${fmt(p.price*qty)}`;}).join('\n');
-  const txt=`Receipt: ${id}\nTill: KHI-01-T1\nPayment: ${q('payment').value}\n\n${lines}\n\nSubtotal: ${q('subtotal').textContent}\nTax: ${q('tax').textContent}\nDiscount: ${q('discount').textContent}\nTOTAL: ${q('total').textContent}\n\nStatus: PAID`;
-  q('receipt').textContent=txt; q('receipt').style.display='block';
-};
-window.dec=dec; window.inc=inc;
-renderProducts(); renderCart();
+  const state = {
+    shiftOpen:false,shiftId:null,openedAt:null,openingFloat:0,
+    cashSales:0,cardSales:0,walletSales:0,sales:0,
+    cart:{},category:'All',lastReceipt:''
+  };
+
+  const q = (id)=>document.getElementById(id);
+  const fmt = (n)=>`PKR ${Math.round(n).toLocaleString()}`;
+
+  function tick(){ q('clock').textContent = new Date().toLocaleTimeString(); }
+  setInterval(tick,1000); tick();
+
+  function cartItems(){
+    return Object.entries(state.cart).map(([sku,qty])=>({p:products.find(x=>x.sku===sku),qty}));
+  }
+  function totals(){
+    const subtotal = cartItems().reduce((s,{p,qty})=>s + p.price*qty,0);
+    const discount = Math.max(0,Number(q('discountInput').value||0));
+    const tax = Math.round(subtotal*TAX);
+    const total = Math.max(0,subtotal+tax-discount);
+    return {subtotal,discount,tax,total};
+  }
+  function splitSum(){ return ['payCash','payCard','payWallet'].reduce((s,id)=>s+Math.max(0,Number(q(id).value||0)),0); }
+
+  function renderCategories(){
+    const cats = ['All',...new Set(products.map(p=>p.category))];
+    q('catbar').innerHTML = cats.map(c=>`<button class="cat ${c===state.category?'active':''}" data-cat="${c}">${c}</button>`).join('');
+    q('catbar').querySelectorAll('.cat').forEach(b=>b.onclick=()=>{ state.category=b.dataset.cat; renderCategories(); renderProducts(); });
+  }
+
+  function renderProducts(){
+    const s = q('search').value.toLowerCase().trim();
+    q('products').innerHTML = products
+      .filter(p=>state.category==='All'||p.category===state.category)
+      .filter(p=>!s||p.name.toLowerCase().includes(s)||p.sku.toLowerCase().includes(s))
+      .map(p=>`<div class="card" data-sku="${p.sku}"><div class="thumb" style="background-image:url('${p.img}')"></div><div class="pc"><div class="name">${p.name}</div><div class="sku">${p.sku} • ${p.category}</div><div class="price">${fmt(p.price)}</div></div></div>`).join('');
+
+    q('products').querySelectorAll('.card').forEach(c=>c.onclick=()=>{
+      if(!state.shiftOpen) return alert('Open shift first.');
+      const sku=c.dataset.sku; state.cart[sku]=(state.cart[sku]||0)+1; renderCart();
+    });
+  }
+
+  function changeQty(sku,step){
+    if(!state.cart[sku]) return;
+    state.cart[sku]+=step;
+    if(state.cart[sku]<=0) delete state.cart[sku];
+    renderCart();
+  }
+
+  function updateSplit(){
+    const t = totals().total;
+    const split = splitSum();
+    const delta = Math.round(split-t);
+    const el = q('splitStatus');
+    if(t===0){el.className='hint';el.textContent='No total yet.';}
+    else if(delta===0){el.className='hint ok';el.textContent=`Split matched: ${fmt(split)}`;}
+    else if(delta<0){el.className='hint warn';el.textContent=`Under by ${fmt(Math.abs(delta))}`;}
+    else {el.className='hint bad';el.textContent=`Over by ${fmt(delta)}`;}
+
+    const cashPart = Math.max(0,Number(q('payCash').value||0));
+    const tendered = Math.max(0,Number(q('cashTendered').value||0));
+    const change = Math.max(0,tendered-cashPart);
+    const shortage = Math.max(0,cashPart-tendered);
+    q('changeStatus').className = 'hint ' + (shortage ? 'warn':'ok');
+    q('changeStatus').textContent = shortage ? `Cash short by ${fmt(shortage)} (needs at least cash split amount).` : `Change due: ${fmt(change)}`;
+    return delta===0;
+  }
+
+  function renderCart(){
+    const items=cartItems();
+    q('cart').innerHTML = items.length ? items.map(({p,qty})=>`<div class="row"><div><b>${p.name}</b><div class="sku">${p.sku}</div></div><div class="qty"><button onclick="changeQty('${p.sku}',-1)">−</button><b>${qty}</b><button onclick="changeQty('${p.sku}',1)">+</button></div><div>${fmt(p.price)}</div><div><b>${fmt(p.price*qty)}</b></div></div>`).join('') : '<div class="hint">No items in cart.</div>';
+    const t=totals();
+    q('subtotal').textContent=fmt(t.subtotal); q('tax').textContent=fmt(t.tax); q('discount').textContent=fmt(t.discount); q('total').textContent=fmt(t.total);
+    updateSplit();
+  }
+
+  function resetSale(){
+    state.cart={}; q('discountInput').value=0; ['payCash','payCard','payWallet','cashTendered'].forEach(id=>q(id).value=0); renderCart();
+  }
+
+  function shiftText(){
+    if(!state.shiftOpen) return 'Shift is closed. Open shift to begin.';
+    return `Shift ${state.shiftId} opened ${new Date(state.openedAt).toLocaleTimeString()} | Sales ${state.sales} | Cash ${fmt(state.cashSales)} | Card ${fmt(state.cardSales)} | Wallet ${fmt(state.walletSales)}`;
+  }
+
+  function renderShift(){
+    q('shiftState').textContent = state.shiftOpen ? 'Shift OPEN' : 'Shift CLOSED';
+    q('openBtn').disabled = state.shiftOpen;
+    q('closeBtn').disabled = !state.shiftOpen;
+    q('shiftSummary').textContent = shiftText();
+  }
+
+  function buildReceipt(ref){
+    const t=totals();
+    const cashSplit=Math.max(0,Number(q('payCash').value||0));
+    const cashTendered=Math.max(0,Number(q('cashTendered').value||0));
+    const change=Math.max(0,cashTendered-cashSplit);
+    return [
+      'OpenClaw POS',
+      'Branch KHI-01 | Till T1',
+      `Receipt: ${ref}`,
+      `Time: ${new Date().toLocaleString()}`,
+      `Shift: ${state.shiftId||'-'}`,
+      '--------------------------------',
+      ...cartItems().map(({p,qty})=>`${p.name.padEnd(22)} x${String(qty).padStart(2)}  ${fmt(p.price*qty)}`),
+      '--------------------------------',
+      `Subtotal: ${fmt(t.subtotal)}`,
+      `Tax 18%:  ${fmt(t.tax)}`,
+      `Discount: ${fmt(t.discount)}`,
+      `TOTAL:    ${fmt(t.total)}`,
+      '',
+      'Payment split',
+      `  Cash:   ${fmt(cashSplit)}`,
+      `  Card:   ${fmt(Number(q('payCard').value||0))}`,
+      `  Wallet: ${fmt(Number(q('payWallet').value||0))}`,
+      `  Tendered Cash: ${fmt(cashTendered)}`,
+      `  Change: ${fmt(change)}`,
+      '',
+      'Status: PAID'
+    ].join('\n');
+  }
+
+  q('openBtn').onclick=()=>{
+    if(state.shiftOpen) return;
+    state.shiftOpen=true;
+    state.shiftId='S-'+Date.now().toString().slice(-6);
+    state.openedAt=Date.now();
+    state.openingFloat=Math.max(0,Number(q('openingFloat').value||0));
+    state.cashSales=state.cardSales=state.walletSales=state.sales=0;
+    q('receipt').style.display='none';
+    q('closeReport').style.display='none';
+    renderShift();
+  };
+
+  q('closeBtn').onclick=()=>{
+    const counted=Math.max(0,Number(q('cashCount').value||0));
+    const expected=state.openingFloat+state.cashSales;
+    const variance=counted-expected;
+    q('closeReport').textContent=[
+      'CLOSE SHIFT REPORT',
+      `Shift: ${state.shiftId}`,
+      `Opened: ${new Date(state.openedAt).toLocaleString()}`,
+      `Closed: ${new Date().toLocaleString()}`,
+      `Sales: ${state.sales}`,
+      '',
+      `Cash Sales:   ${fmt(state.cashSales)}`,
+      `Card Sales:   ${fmt(state.cardSales)}`,
+      `Wallet Sales: ${fmt(state.walletSales)}`,
+      '',
+      `Opening Float: ${fmt(state.openingFloat)}`,
+      `Expected Cash: ${fmt(expected)}`,
+      `Counted Cash:  ${fmt(counted)}`,
+      `Variance: ${(variance>=0?'+':'-')+fmt(Math.abs(variance))}`,
+      `Status: ${variance===0?'BALANCED':(variance>0?'OVER':'SHORT')}`
+    ].join('\n');
+    q('closeReport').style.display='block';
+
+    state.shiftOpen=false; state.cart={}; renderCart(); renderShift();
+  };
+
+  q('saleBtn').onclick=()=>{
+    if(!state.shiftOpen) return alert('Open shift first.');
+    if(!Object.keys(state.cart).length) return alert('Add products first.');
+    if(!updateSplit()) return alert('Payment split must exactly match total.');
+
+    const cashSplit=Math.max(0,Number(q('payCash').value||0));
+    const cashTendered=Math.max(0,Number(q('cashTendered').value||0));
+    if(cashTendered < cashSplit) return alert('Tendered cash cannot be lower than cash split amount.');
+
+    state.cashSales += cashSplit;
+    state.cardSales += Math.max(0,Number(q('payCard').value||0));
+    state.walletSales += Math.max(0,Number(q('payWallet').value||0));
+    state.sales += 1;
+
+    state.lastReceipt = buildReceipt('RCP-'+Date.now().toString().slice(-8));
+    q('receipt').textContent=state.lastReceipt;
+    q('receipt').style.display='block';
+    resetSale(); renderShift();
+  };
+
+  q('previewBtn').onclick=()=>{
+    if(!Object.keys(state.cart).length) return alert('Cart is empty.');
+    state.lastReceipt=buildReceipt('RCP-'+Date.now().toString().slice(-8));
+    q('receipt').textContent=state.lastReceipt;
+    q('receipt').style.display='block';
+  };
+  q('printBtn').onclick=()=>{ if(!state.lastReceipt) return alert('Preview receipt first.'); window.print(); };
+  q('clearBtn').onclick=()=>{ resetSale(); q('receipt').style.display='none'; };
+
+  q('search').addEventListener('input',renderProducts);
+  q('discountInput').addEventListener('input',renderCart);
+  ['payCash','payCard','payWallet','cashTendered'].forEach(id=>q(id).addEventListener('input',updateSplit));
+
+  window.changeQty=changeQty;
+  renderCategories(); renderProducts(); renderCart(); renderShift();
 </script>
 </body>
 </html>
