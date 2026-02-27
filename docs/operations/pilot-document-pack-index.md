@@ -10,6 +10,9 @@ This index tracks the frontline-ready pilot docs produced for openclaw-pos sprin
 2. [`training-checklist-2-branch-pilot.md`](./training-checklist-2-branch-pilot.md)  
    **Covers:** role-based training modules, assessments, certification, branch readiness gates, day-1 hypercare.
 
+3. [`investor-pilot-walkthrough-script.md`](./investor-pilot-walkthrough-script.md)  
+   **Covers:** concise 12-minute product narrative, demo run order, closing prompts, and consistency checklist for investors/pilot stakeholders.
+
 ## Reference (`docs/reference`)
 
 1. [`management-report-catalog-v1.md`](../reference/management-report-catalog-v1.md)  
