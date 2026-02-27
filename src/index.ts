@@ -58,6 +58,9 @@ export default {
           "GET/POST /v1/sync-conflicts",
           "GET/POST /v1/app-config",
           "GET/POST /v1/sales-receipts",
+          "GET/POST /v1/sales-receipt-lines",
+          "GET/POST /v1/sales-receipt-payments",
+          "GET /v1/day-close-summary",
           "GET/POST /v1/inventory-movements",
           "GET/POST /v1/branch-reconciliations",
           "POST /v1/seed/demo-branch",
@@ -93,7 +96,7 @@ export default {
           core: ["org-units", "employees", "orders", "shipments"],
           commerce: ["channels", "channel-accounts", "shopify-webhook", "amazon-webhook"],
           newToday: ["customers", "inventory", "pricing", "tax", "payments", "offline-sync"],
-          financeOps: ["sales-posting", "inventory-movements", "branch-reconciliation"]
+          financeOps: ["sales-posting", "inventory-movements", "branch-reconciliation", "payment-split", "day-close-summary"]
         }
       });
     }
@@ -114,6 +117,8 @@ export default {
       "/v1/sync-conflicts",
       "/v1/app-config",
       "/v1/sales-receipts",
+      "/v1/sales-receipt-lines",
+      "/v1/sales-receipt-payments",
       "/v1/inventory-movements",
       "/v1/branch-reconciliations",
       "/v1/seed/demo-branch",
@@ -563,6 +568,121 @@ export default {
       } catch (e) {
         return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
       }
+    }
+
+    if (path === "/v1/sales-receipt-lines" && method === "GET") {
+      const { results } = await env.openclaw_pos
+        .prepare(`SELECT * FROM sales_receipt_lines ORDER BY created_at DESC LIMIT 500`)
+        .all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/sales-receipt-lines" && method === "POST") {
+      const body = await readJson<{
+        id?: string; sales_receipt_id?: string; sku_code?: string; item_name?: string | null;
+        quantity?: number; unit_price?: number; tax_amount?: number; discount_amount?: number; line_total?: number;
+      }>(request);
+
+      if (!body?.id || !body.sales_receipt_id || !body.sku_code || body.quantity === undefined || body.unit_price === undefined || body.line_total === undefined) {
+        return badRequest("Required fields: id, sales_receipt_id, sku_code, quantity, unit_price, line_total");
+      }
+
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO sales_receipt_lines (id, sales_receipt_id, sku_code, item_name, quantity, unit_price, tax_amount, discount_amount, line_total, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+          .bind(
+            body.id,
+            body.sales_receipt_id,
+            body.sku_code,
+            body.item_name ?? null,
+            body.quantity,
+            body.unit_price,
+            body.tax_amount ?? 0,
+            body.discount_amount ?? 0,
+            body.line_total,
+            nowIso()
+          )
+          .run();
+        return json({ ok: true, id: body.id }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/sales-receipt-payments" && method === "GET") {
+      const { results } = await env.openclaw_pos
+        .prepare(`SELECT * FROM sales_receipt_payments ORDER BY created_at DESC LIMIT 500`)
+        .all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/sales-receipt-payments" && method === "POST") {
+      const body = await readJson<{
+        id?: string; sales_receipt_id?: string; payment_method_id?: string; amount?: number; reference_no?: string | null; settlement_status?: string;
+      }>(request);
+
+      if (!body?.id || !body.sales_receipt_id || !body.payment_method_id || body.amount === undefined) {
+        return badRequest("Required fields: id, sales_receipt_id, payment_method_id, amount");
+      }
+
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO sales_receipt_payments (id, sales_receipt_id, payment_method_id, amount, reference_no, settlement_status, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)`)
+          .bind(body.id, body.sales_receipt_id, body.payment_method_id, body.amount, body.reference_no ?? null, body.settlement_status ?? "captured", nowIso())
+          .run();
+        return json({ ok: true, id: body.id }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/day-close-summary" && method === "GET") {
+      const branchId = url.searchParams.get("branch_id");
+      const businessDate = url.searchParams.get("business_date");
+      if (!branchId || !businessDate) {
+        return badRequest("Query params required: branch_id, business_date");
+      }
+
+      const totals = await env.openclaw_pos
+        .prepare(`SELECT
+                    COUNT(*) as receipt_count,
+                    COALESCE(SUM(total_amount), 0) as gross_sales,
+                    COALESCE(SUM(tax_amount), 0) as total_tax,
+                    COALESCE(SUM(discount_amount), 0) as total_discount
+                  FROM sales_receipts
+                  WHERE branch_id = ? AND business_date = ?`)
+        .bind(branchId, businessDate)
+        .first<{ receipt_count: number; gross_sales: number; total_tax: number; total_discount: number }>();
+
+      const payments = await env.openclaw_pos
+        .prepare(`SELECT pm.method_code, pm.display_name, COALESCE(SUM(rp.amount), 0) as amount
+                  FROM sales_receipt_payments rp
+                  JOIN payment_methods pm ON pm.id = rp.payment_method_id
+                  JOIN sales_receipts sr ON sr.id = rp.sales_receipt_id
+                  WHERE sr.branch_id = ? AND sr.business_date = ?
+                  GROUP BY pm.method_code, pm.display_name
+                  ORDER BY amount DESC`)
+        .bind(branchId, businessDate)
+        .all();
+
+      const reconciliation = await env.openclaw_pos
+        .prepare(`SELECT id, expected_sales_amount, counted_cash_amount, variance_amount, status
+                  FROM branch_reconciliations
+                  WHERE branch_id = ? AND business_date = ?
+                  LIMIT 1`)
+        .bind(branchId, businessDate)
+        .first();
+
+      return json({
+        ok: true,
+        branch_id: branchId,
+        business_date: businessDate,
+        totals: totals ?? { receipt_count: 0, gross_sales: 0, total_tax: 0, total_discount: 0 },
+        payments: payments.results ?? [],
+        reconciliation: reconciliation ?? null,
+      });
     }
 
     if (path === "/v1/inventory-movements" && method === "GET") {

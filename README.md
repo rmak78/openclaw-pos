@@ -103,6 +103,9 @@ Also planned/expanding:
 - `GET/POST /v1/sync-conflicts`
 - `GET/POST /v1/app-config`
 - `GET/POST /v1/sales-receipts`
+- `GET/POST /v1/sales-receipt-lines`
+- `GET/POST /v1/sales-receipt-payments`
+- `GET /v1/day-close-summary?branch_id=<id>&business_date=YYYY-MM-DD`
 - `GET/POST /v1/inventory-movements`
 - `GET/POST /v1/branch-reconciliations`
 - `POST /v1/seed/demo-branch`
