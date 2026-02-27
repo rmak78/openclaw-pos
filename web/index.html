@@ -15,6 +15,8 @@
       --brand: #58d5ff;
       --ok: #4ade80;
       --warn: #facc15;
+      --danger: #fb7185;
+      --focus: #93c5fd;
     }
     * { box-sizing: border-box; }
     body {
@@ -32,6 +34,7 @@
       position: sticky;
       top: 0;
       height: 100vh;
+      overflow: auto;
     }
     .logo { font-size: 18px; font-weight: 700; margin: 0 0 16px; }
     .sub { color: var(--muted); font-size: 12px; margin-bottom: 16px; }
@@ -45,12 +48,17 @@
       border-radius: 10px;
       padding: 10px;
       cursor: pointer;
+      transition: transform 130ms ease, border-color 130ms ease, background 130ms ease, box-shadow 130ms ease;
+      position: relative;
+      overflow: hidden;
     }
+    .nav button:hover { transform: translateY(-1px); border-color: #3b82f688; }
     .nav button.active {
       border-color: #3b82f6;
       background: #162342;
       box-shadow: inset 0 0 0 1px #3b82f6aa;
     }
+
     main { padding: 24px; }
     .topbar {
       display: flex;
@@ -58,6 +66,7 @@
       gap: 12px;
       flex-wrap: wrap;
       margin-bottom: 16px;
+      align-items: flex-start;
     }
     .badge {
       border: 1px solid var(--line);
@@ -67,14 +76,58 @@
       color: var(--muted);
       background: var(--panel);
     }
+
+    .screen-wrap {
+      position: relative;
+      min-height: 390px;
+      display: grid;
+    }
     .screen {
-      display: none;
+      grid-area: 1 / 1;
+      visibility: hidden;
+      opacity: 0;
+      transform: translateY(10px) scale(0.995);
+      pointer-events: none;
       border: 1px solid var(--line);
       border-radius: 14px;
       background: linear-gradient(160deg, var(--panel), #0f1628);
       padding: 18px;
+      transition: opacity 200ms ease, transform 220ms ease, visibility 0ms linear 220ms;
+      will-change: opacity, transform;
     }
-    .screen.active { display: block; }
+    .screen.active {
+      visibility: visible;
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .skeleton {
+      grid-area: 1 / 1;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: linear-gradient(160deg, var(--panel), #0f1628);
+      padding: 18px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 120ms ease;
+    }
+    .skeleton.active { opacity: 1; }
+    .s-row, .s-block {
+      border-radius: 10px;
+      background: linear-gradient(110deg, #17213c 25%, #243456 35%, #17213c 45%);
+      background-size: 300% 100%;
+      animation: shimmer 1.15s linear infinite;
+    }
+    .s-row { height: 18px; margin-bottom: 12px; }
+    .s-row.w40 { width: 40%; }
+    .s-row.w60 { width: 60%; }
+    .s-row.w80 { width: 80%; }
+    .s-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-top: 18px; }
+    .s-block { height: 110px; }
+    @keyframes shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+
     h1 { font-size: 28px; margin: 0 0 6px; }
     h2 { margin: 0 0 6px; font-size: 22px; }
     p { margin: 0 0 12px; color: var(--muted); }
@@ -84,7 +137,9 @@
       border-radius: 12px;
       background: #0c1427;
       padding: 12px;
+      transition: transform 140ms ease, border-color 140ms ease;
     }
+    .card:hover { transform: translateY(-1px); border-color: #355181; }
     .card h3 { margin: 0 0 8px; font-size: 16px; }
     .small { font-size: 12px; color: var(--muted); }
     .row { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -95,15 +150,119 @@
       border-radius: 8px;
       padding: 8px 11px;
       cursor: pointer;
+      transition: transform 120ms ease, filter 120ms ease, box-shadow 120ms ease;
+      position: relative;
+      overflow: hidden;
     }
+    .btn:hover { filter: brightness(1.07); }
+    .btn:active { transform: scale(0.98); }
     .btn.primary { background: linear-gradient(90deg, #0ea5e9, #2563eb); border-color: #2563eb; }
     .btn.ok { background: #153b2a; border-color: #1f7a4f; }
+    .btn.ghost { background: transparent; }
+    .btn-feedback {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, #ffffff66 0%, transparent 60%);
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.7);
+      transition: opacity 160ms ease, transform 220ms ease;
+    }
+    .btn.flash .btn-feedback { opacity: 0.45; transform: scale(1.2); }
+
     .stat { font-size: 24px; font-weight: 700; }
     .status-ok { color: var(--ok); }
     .status-warn { color: var(--warn); }
+
+    .kbd-hint {
+      margin-top: 12px;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px dashed #33456f;
+      background: #0d162d;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    kbd {
+      border: 1px solid #3c4f7a;
+      border-bottom-width: 2px;
+      background: #101b34;
+      border-radius: 6px;
+      padding: 1px 6px;
+      color: #d7e3f8;
+      font-size: 11px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .toast-wrap {
+      position: fixed;
+      right: 14px;
+      bottom: 14px;
+      display: grid;
+      gap: 8px;
+      z-index: 40;
+    }
+    .toast {
+      min-width: 220px;
+      max-width: 320px;
+      border: 1px solid #32508a;
+      background: #111d36;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 12px;
+      box-shadow: 0 12px 30px #00000050;
+      opacity: 0;
+      transform: translateY(8px);
+      animation: toast-in 220ms ease forwards;
+      font-size: 13px;
+    }
+    .toast.ok { border-color: #246446; background: #102920; }
+    .toast.warn { border-color: #7a6518; background: #2b2512; }
+    .toast.out { animation: toast-out 220ms ease forwards; }
+    @keyframes toast-in { to { opacity: 1; transform: translateY(0); } }
+    @keyframes toast-out { to { opacity: 0; transform: translateY(8px); } }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: #02061699;
+      backdrop-filter: blur(2px);
+      display: grid;
+      place-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease;
+      z-index: 50;
+    }
+    .modal-backdrop.open { opacity: 1; pointer-events: auto; }
+    .modal {
+      width: min(560px, calc(100vw - 30px));
+      border: 1px solid #355286;
+      border-radius: 14px;
+      background: linear-gradient(170deg, #0f1a31, #0b1224);
+      box-shadow: 0 22px 60px #00000099;
+      padding: 16px;
+      transform: translateY(10px) scale(0.98);
+      transition: transform 200ms ease;
+    }
+    .modal-backdrop.open .modal { transform: translateY(0) scale(1); }
+    .modal h3 { margin: 0 0 6px; }
+    .modal ul { margin: 10px 0 14px 20px; color: var(--muted); }
+
+    :focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+
     @media (max-width: 850px) {
       .app { grid-template-columns: 1fr; }
       aside { position: static; height: auto; }
+      .screen-wrap { min-height: 430px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
     }
   </style>
 </head>
@@ -113,7 +272,10 @@
       <div class="logo">OpenClaw POS Prototype</div>
       <div class="sub">Clickable shell for cross-module demo</div>
       <div class="nav" id="nav"></div>
-      <p class="small" style="margin-top:16px;">Tip: use this in stakeholder demos to walk end-to-end operational flow.</p>
+      <div class="kbd-hint">
+        Quick nav: <kbd>1</kbd>-<kbd>6</kbd> screens • <kbd>↑</kbd>/<kbd>↓</kbd> sidebar • <kbd>?</kbd> help
+      </div>
+      <p class="small" style="margin-top:12px;">Tip: use this in stakeholder demos to walk end-to-end operational flow.</p>
     </aside>
 
     <main>
@@ -126,93 +288,126 @@
           <span class="badge">Branch: KHI-01</span>
           <span class="badge">Business Date: 2026-02-27</span>
           <span class="badge">Mode: Demo Offline/Online</span>
+          <button class="btn ghost" id="shortcutsBtn">Keyboard Shortcuts</button>
         </div>
       </div>
 
-      <section class="screen" id="checkout">
-        <h2>POS Checkout</h2>
-        <p>Scan items, apply pricing/tax policy, capture payments, and issue receipt.</p>
-        <div class="grid">
-          <div class="card"><h3>Basket</h3><div class="small">3 items • subtotal PKR 4,250 • tax inclusive</div></div>
-          <div class="card"><h3>Payment Split</h3><div class="small">Cash PKR 2,000 + Card PKR 2,250</div></div>
-          <div class="card"><h3>Sync Status</h3><div class="small status-ok">Queued safely for sync outbox</div></div>
+      <div class="screen-wrap" id="screenWrap">
+        <div class="skeleton" id="skeleton" aria-hidden="true">
+          <div class="s-row w40"></div>
+          <div class="s-row w80"></div>
+          <div class="s-row w60"></div>
+          <div class="s-grid">
+            <div class="s-block"></div>
+            <div class="s-block"></div>
+            <div class="s-block"></div>
+          </div>
         </div>
-        <div class="row" style="margin-top:12px;">
-          <button class="btn primary" data-go="refunds">Issue Return / Refund</button>
-          <button class="btn" data-go="till-close">Move to Till Close</button>
-        </div>
-      </section>
 
-      <section class="screen" id="refunds">
-        <h2>Returns / Refunds</h2>
-        <p>Find receipt, validate return lines, compute refund, and reverse inventory.</p>
-        <div class="grid">
-          <div class="card"><h3>Original Receipt</h3><div class="small">#KHI01-T2-100483 • 2026-02-27 14:09</div></div>
-          <div class="card"><h3>Return Lines</h3><div class="small">1 x SKU-CH-101 (defect) • restock: yes</div></div>
-          <div class="card"><h3>Refund Method</h3><div class="small">Original card route (same-day)</div></div>
-        </div>
-        <div class="row" style="margin-top:12px;">
-          <button class="btn ok" data-go="checkout">Back to Checkout</button>
-          <button class="btn primary" data-go="till-close">Finalize & Go Till Close</button>
-        </div>
-      </section>
+        <section class="screen" id="checkout">
+          <h2>POS Checkout</h2>
+          <p>Scan items, apply pricing/tax policy, capture payments, and issue receipt.</p>
+          <div class="grid">
+            <div class="card"><h3>Basket</h3><div class="small">3 items • subtotal PKR 4,250 • tax inclusive</div></div>
+            <div class="card"><h3>Payment Split</h3><div class="small">Cash PKR 2,000 + Card PKR 2,250</div></div>
+            <div class="card"><h3>Sync Status</h3><div class="small status-ok">Queued safely for sync outbox</div></div>
+          </div>
+          <div class="row" style="margin-top:12px;">
+            <button class="btn primary" data-go="refunds">Issue Return / Refund</button>
+            <button class="btn" data-go="till-close">Move to Till Close</button>
+          </div>
+        </section>
 
-      <section class="screen" id="till-close">
-        <h2>Till Close</h2>
-        <p>Reconcile expected vs counted cash, capture drops/variance reasons, submit close.</p>
-        <div class="grid">
-          <div class="card"><h3>Expected Cash</h3><div class="stat">PKR 128,200</div></div>
-          <div class="card"><h3>Counted Cash</h3><div class="stat">PKR 127,900</div></div>
-          <div class="card"><h3>Variance</h3><div class="stat status-warn">-300</div><div class="small">Reason: petty cash correction</div></div>
-        </div>
-        <div class="row" style="margin-top:12px;">
-          <button class="btn primary" data-go="day-close">Submit Till Close</button>
-        </div>
-      </section>
+        <section class="screen" id="refunds">
+          <h2>Returns / Refunds</h2>
+          <p>Find receipt, validate return lines, compute refund, and reverse inventory.</p>
+          <div class="grid">
+            <div class="card"><h3>Original Receipt</h3><div class="small">#KHI01-T2-100483 • 2026-02-27 14:09</div></div>
+            <div class="card"><h3>Return Lines</h3><div class="small">1 x SKU-CH-101 (defect) • restock: yes</div></div>
+            <div class="card"><h3>Refund Method</h3><div class="small">Original card route (same-day)</div></div>
+          </div>
+          <div class="row" style="margin-top:12px;">
+            <button class="btn ok" data-go="checkout">Back to Checkout</button>
+            <button class="btn primary" data-go="till-close">Finalize & Go Till Close</button>
+          </div>
+        </section>
 
-      <section class="screen" id="day-close">
-        <h2>Day-Close Dashboard</h2>
-        <p>Management summary of sales, refunds, till variances, and posting readiness.</p>
-        <div class="grid">
-          <div class="card"><h3>Net Sales</h3><div class="stat">PKR 2.83M</div></div>
-          <div class="card"><h3>Refunds</h3><div class="stat">PKR 84K</div></div>
-          <div class="card"><h3>Tills Closed</h3><div class="stat status-ok">6 / 6</div></div>
-          <div class="card"><h3>Branch Reconciliation</h3><div class="small status-ok">Ready for FinOps posting</div></div>
-        </div>
-        <div class="row" style="margin-top:12px;">
-          <button class="btn" data-go="procurement">Create Purchase Order</button>
-          <button class="btn primary" data-go="payroll">Open Payroll Run</button>
-        </div>
-      </section>
+        <section class="screen" id="till-close">
+          <h2>Till Close</h2>
+          <p>Reconcile expected vs counted cash, capture drops/variance reasons, submit close.</p>
+          <div class="grid">
+            <div class="card"><h3>Expected Cash</h3><div class="stat">PKR 128,200</div></div>
+            <div class="card"><h3>Counted Cash</h3><div class="stat">PKR 127,900</div></div>
+            <div class="card"><h3>Variance</h3><div class="stat status-warn">-300</div><div class="small">Reason: petty cash correction</div></div>
+          </div>
+          <div class="row" style="margin-top:12px;">
+            <button class="btn primary" data-go="day-close">Submit Till Close</button>
+          </div>
+        </section>
 
-      <section class="screen" id="procurement">
-        <h2>Procurement — Purchase Order</h2>
-        <p>Raise branch replenishment PO linked to approved supplier and warehouse targets.</p>
-        <div class="grid">
-          <div class="card"><h3>Supplier</h3><div class="small">Global Foods Distributor Ltd.</div></div>
-          <div class="card"><h3>PO Value</h3><div class="stat">PKR 1.12M</div></div>
-          <div class="card"><h3>ETA</h3><div class="small">2026-03-02 • WH-KHI-CENTRAL</div></div>
-        </div>
-        <div class="row" style="margin-top:12px;">
-          <button class="btn primary" data-go="day-close">Back to Day-Close</button>
-          <button class="btn" data-go="payroll">Continue to Payroll</button>
-        </div>
-      </section>
+        <section class="screen" id="day-close">
+          <h2>Day-Close Dashboard</h2>
+          <p>Management summary of sales, refunds, till variances, and posting readiness.</p>
+          <div class="grid">
+            <div class="card"><h3>Net Sales</h3><div class="stat">PKR 2.83M</div></div>
+            <div class="card"><h3>Refunds</h3><div class="stat">PKR 84K</div></div>
+            <div class="card"><h3>Tills Closed</h3><div class="stat status-ok">6 / 6</div></div>
+            <div class="card"><h3>Branch Reconciliation</h3><div class="small status-ok">Ready for FinOps posting</div></div>
+          </div>
+          <div class="row" style="margin-top:12px;">
+            <button class="btn" data-go="procurement">Create Purchase Order</button>
+            <button class="btn primary" data-go="payroll">Open Payroll Run</button>
+          </div>
+        </section>
 
-      <section class="screen" id="payroll">
-        <h2>Payroll Run</h2>
-        <p>Lock attendance inputs, calculate gross-to-net, and queue payroll batch approvals.</p>
-        <div class="grid">
-          <div class="card"><h3>Pay Cycle</h3><div class="small">Monthly • Feb 2026</div></div>
-          <div class="card"><h3>Employees</h3><div class="stat">186</div></div>
-          <div class="card"><h3>Net Pay</h3><div class="stat">PKR 19.4M</div></div>
-          <div class="card"><h3>Status</h3><div class="small status-ok">Draft generated • Awaiting CFO approval</div></div>
-        </div>
-        <div class="row" style="margin-top:12px;">
-          <button class="btn primary" data-go="checkout">Restart Demo from Checkout</button>
-        </div>
-      </section>
+        <section class="screen" id="procurement">
+          <h2>Procurement — Purchase Order</h2>
+          <p>Raise branch replenishment PO linked to approved supplier and warehouse targets.</p>
+          <div class="grid">
+            <div class="card"><h3>Supplier</h3><div class="small">Global Foods Distributor Ltd.</div></div>
+            <div class="card"><h3>PO Value</h3><div class="stat">PKR 1.12M</div></div>
+            <div class="card"><h3>ETA</h3><div class="small">2026-03-02 • WH-KHI-CENTRAL</div></div>
+          </div>
+          <div class="row" style="margin-top:12px;">
+            <button class="btn primary" data-go="day-close">Back to Day-Close</button>
+            <button class="btn" data-go="payroll">Continue to Payroll</button>
+          </div>
+        </section>
+
+        <section class="screen" id="payroll">
+          <h2>Payroll Run</h2>
+          <p>Lock attendance inputs, calculate gross-to-net, and queue payroll batch approvals.</p>
+          <div class="grid">
+            <div class="card"><h3>Pay Cycle</h3><div class="small">Monthly • Feb 2026</div></div>
+            <div class="card"><h3>Employees</h3><div class="stat">186</div></div>
+            <div class="card"><h3>Net Pay</h3><div class="stat">PKR 19.4M</div></div>
+            <div class="card"><h3>Status</h3><div class="small status-ok">Draft generated • Awaiting CFO approval</div></div>
+          </div>
+          <div class="row" style="margin-top:12px;">
+            <button class="btn primary" data-go="checkout">Restart Demo from Checkout</button>
+          </div>
+        </section>
+      </div>
     </main>
+  </div>
+
+  <div class="toast-wrap" id="toasts" aria-live="polite" aria-atomic="true"></div>
+
+  <div class="modal-backdrop" id="shortcutsModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="kbdTitle">
+      <h3 id="kbdTitle">Keyboard navigation</h3>
+      <p class="small">Fast demo flow controls (no mouse needed):</p>
+      <ul>
+        <li><kbd>1</kbd>..<kbd>6</kbd> jump directly to a section</li>
+        <li><kbd>↑</kbd> / <kbd>↓</kbd> move between sidebar sections</li>
+        <li><kbd>Enter</kbd> trigger selected sidebar section</li>
+        <li><kbd>?</kbd> open shortcuts modal</li>
+        <li><kbd>Esc</kbd> close modal</li>
+      </ul>
+      <div class="row">
+        <button class="btn primary" id="modalCloseBtn">Got it</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -228,32 +423,157 @@
     const nav = document.getElementById('nav');
     const title = document.getElementById('screenTitle');
     const desc = document.getElementById('screenDesc');
+    const skeleton = document.getElementById('skeleton');
+    const toasts = document.getElementById('toasts');
+    const shortcutsBtn = document.getElementById('shortcutsBtn');
+    const shortcutsModal = document.getElementById('shortcutsModal');
+    const modalCloseBtn = document.getElementById('modalCloseBtn');
 
-    screens.forEach((s) => {
+    let currentId = null;
+    let navFocusIndex = 0;
+
+    function withButtonFeedback(el) {
+      if (!el || el.querySelector('.btn-feedback')) return;
+      const fx = document.createElement('span');
+      fx.className = 'btn-feedback';
+      el.appendChild(fx);
+      el.addEventListener('click', () => {
+        el.classList.add('flash');
+        setTimeout(() => el.classList.remove('flash'), 170);
+      });
+    }
+
+    function showToast(message, kind = 'info') {
+      const toast = document.createElement('div');
+      toast.className = `toast ${kind}`;
+      toast.textContent = message;
+      toasts.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.add('out');
+        setTimeout(() => toast.remove(), 220);
+      }, 1900);
+    }
+
+    function getScreenIndex(id) {
+      return screens.findIndex((s) => s.id === id);
+    }
+
+    function openModal() {
+      shortcutsModal.classList.add('open');
+      shortcutsModal.setAttribute('aria-hidden', 'false');
+      modalCloseBtn.focus();
+    }
+
+    function closeModal() {
+      shortcutsModal.classList.remove('open');
+      shortcutsModal.setAttribute('aria-hidden', 'true');
+      shortcutsBtn.focus();
+    }
+
+    screens.forEach((s, idx) => {
       const btn = document.createElement('button');
-      btn.textContent = s.label;
+      btn.textContent = `${idx + 1}. ${s.label}`;
       btn.dataset.target = s.id;
-      btn.addEventListener('click', () => go(s.id));
+      btn.addEventListener('click', () => go(s.id, { showLoader: true, announce: true }));
+      withButtonFeedback(btn);
       nav.appendChild(btn);
     });
 
-    function go(id) {
+    document.querySelectorAll('.btn').forEach(withButtonFeedback);
+
+    function applyScreen(id) {
       document.querySelectorAll('.screen').forEach((el) => el.classList.toggle('active', el.id === id));
-      document.querySelectorAll('.nav button').forEach((el) => el.classList.toggle('active', el.dataset.target === id));
+      document.querySelectorAll('.nav button').forEach((el, idx) => {
+        const active = el.dataset.target === id;
+        el.classList.toggle('active', active);
+        if (active) navFocusIndex = idx;
+      });
+
       const current = screens.find((s) => s.id === id);
       if (current) {
         title.textContent = current.label;
         desc.textContent = current.desc;
       }
+      currentId = id;
       history.replaceState(null, '', `#${id}`);
     }
 
+    function go(id, opts = {}) {
+      const { showLoader = false, announce = false } = opts;
+      if (!screens.some((s) => s.id === id) || id === currentId) return;
+
+      if (showLoader) {
+        skeleton.classList.add('active');
+        setTimeout(() => {
+          skeleton.classList.remove('active');
+          applyScreen(id);
+        }, 220);
+      } else {
+        applyScreen(id);
+      }
+
+      if (announce) {
+        const s = screens.find((x) => x.id === id);
+        showToast(`Opened: ${s.label}`, 'ok');
+      }
+    }
+
     document.querySelectorAll('[data-go]').forEach((btn) => {
-      btn.addEventListener('click', () => go(btn.dataset.go));
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.go;
+        const targetLabel = screens.find((s) => s.id === target)?.label || target;
+        showToast(`Action complete → ${targetLabel}`);
+        go(target, { showLoader: true, announce: false });
+      });
+    });
+
+    shortcutsBtn.addEventListener('click', openModal);
+    modalCloseBtn.addEventListener('click', closeModal);
+    shortcutsModal.addEventListener('click', (e) => {
+      if (e.target === shortcutsModal) closeModal();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+        e.preventDefault();
+        openModal();
+        return;
+      }
+
+      if (e.key === 'Escape' && shortcutsModal.classList.contains('open')) {
+        e.preventDefault();
+        closeModal();
+        return;
+      }
+
+      if (shortcutsModal.classList.contains('open')) return;
+
+      if (/^[1-6]$/.test(e.key)) {
+        const idx = Number(e.key) - 1;
+        const target = screens[idx];
+        if (target) go(target.id, { showLoader: true, announce: true });
+        return;
+      }
+
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const total = screens.length;
+        navFocusIndex = e.key === 'ArrowDown'
+          ? (navFocusIndex + 1) % total
+          : (navFocusIndex - 1 + total) % total;
+        const btn = nav.querySelectorAll('button')[navFocusIndex];
+        if (btn) btn.focus();
+        return;
+      }
+
+      if (e.key === 'Enter' && document.activeElement?.closest('#nav')) {
+        document.activeElement.click();
+      }
     });
 
     const start = location.hash.replace('#', '');
-    go(screens.some((s) => s.id === start) ? start : 'checkout');
+    applyScreen(screens.some((s) => s.id === start) ? start : 'checkout');
+    showToast('Demo shell ready. Press ? for shortcuts.', 'ok');
   </script>
 </body>
 </html>
