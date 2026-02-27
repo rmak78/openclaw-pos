@@ -60,6 +60,9 @@ export default {
           "GET/POST /v1/sales-receipts",
           "GET/POST /v1/sales-receipt-lines",
           "GET/POST /v1/sales-receipt-payments",
+          "GET/POST /v1/sales-returns",
+          "GET/POST /v1/sales-return-lines",
+          "GET/POST /v1/sales-refunds",
           "GET /v1/day-close-summary",
           "GET/POST /v1/till-sessions",
           "POST /v1/till-sessions/close",
@@ -87,7 +90,7 @@ export default {
       return json({
         ok: true,
         api: "v1",
-        version: "0.4.0",
+        version: "0.5.0",
         deployedOn: "cloudflare-workers",
         db: "d1:openclaw_pos",
       });
@@ -100,7 +103,7 @@ export default {
           core: ["org-units", "employees", "orders", "shipments"],
           commerce: ["channels", "channel-accounts", "shopify-webhook", "amazon-webhook"],
           newToday: ["customers", "inventory", "pricing", "tax", "payments", "offline-sync"],
-          financeOps: ["sales-posting", "inventory-movements", "branch-reconciliation", "payment-split", "day-close-summary", "till-session", "cash-drop", "variance-reason-codes"]
+          financeOps: ["sales-posting", "inventory-movements", "branch-reconciliation", "payment-split", "day-close-summary", "till-session", "cash-drop", "variance-reason-codes", "sales-returns", "refunds"]
         }
       });
     }
@@ -123,6 +126,9 @@ export default {
       "/v1/sales-receipts",
       "/v1/sales-receipt-lines",
       "/v1/sales-receipt-payments",
+      "/v1/sales-returns",
+      "/v1/sales-return-lines",
+      "/v1/sales-refunds",
       "/v1/till-sessions",
       "/v1/till-sessions/close",
       "/v1/cash-drops",
@@ -641,6 +647,174 @@ export default {
           .bind(body.id, body.sales_receipt_id, body.payment_method_id, body.amount, body.reference_no ?? null, body.settlement_status ?? "captured", nowIso())
           .run();
         return json({ ok: true, id: body.id }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/sales-returns" && method === "GET") {
+      const { results } = await env.openclaw_pos
+        .prepare(`SELECT * FROM sales_returns ORDER BY created_at DESC LIMIT 200`)
+        .all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/sales-returns" && method === "POST") {
+      const body = await readJson<{
+        id?: string; return_no?: string; original_sales_receipt_id?: string | null; branch_id?: string; till_session_id?: string | null;
+        cashier_employee_id?: string | null; customer_id?: string | null; return_reason?: string | null; return_status?: string;
+        currency_code?: string; subtotal_amount?: number; tax_amount?: number; discount_amount?: number; total_amount?: number; business_date?: string;
+      }>(request);
+
+      if (!body?.id || !body.return_no || !body.branch_id || !body.currency_code || !body.business_date) {
+        return badRequest("Required fields: id, return_no, branch_id, currency_code, business_date");
+      }
+
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO sales_returns (id, return_no, original_sales_receipt_id, branch_id, till_session_id, cashier_employee_id, customer_id, return_reason, return_status, currency_code, subtotal_amount, tax_amount, discount_amount, total_amount, business_date, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+          .bind(
+            body.id,
+            body.return_no,
+            body.original_sales_receipt_id ?? null,
+            body.branch_id,
+            body.till_session_id ?? null,
+            body.cashier_employee_id ?? null,
+            body.customer_id ?? null,
+            body.return_reason ?? null,
+            body.return_status ?? "initiated",
+            body.currency_code,
+            body.subtotal_amount ?? 0,
+            body.tax_amount ?? 0,
+            body.discount_amount ?? 0,
+            body.total_amount ?? 0,
+            body.business_date,
+            nowIso(),
+            nowIso()
+          )
+          .run();
+
+        return json({ ok: true, id: body.id, status: body.return_status ?? "initiated" }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/sales-return-lines" && method === "GET") {
+      const { results } = await env.openclaw_pos
+        .prepare(`SELECT * FROM sales_return_lines ORDER BY created_at DESC LIMIT 500`)
+        .all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/sales-return-lines" && method === "POST") {
+      const body = await readJson<{
+        id?: string; sales_return_id?: string; original_sales_receipt_line_id?: string | null; sku_code?: string; item_name?: string | null;
+        quantity?: number; unit_price?: number; tax_amount?: number; discount_amount?: number; line_total?: number; restock_to_inventory?: number;
+      }>(request);
+
+      if (!body?.id || !body.sales_return_id || !body.sku_code || body.quantity === undefined || body.unit_price === undefined || body.line_total === undefined) {
+        return badRequest("Required fields: id, sales_return_id, sku_code, quantity, unit_price, line_total");
+      }
+
+      const ret = await env.openclaw_pos
+        .prepare(`SELECT branch_id, business_date FROM sales_returns WHERE id = ? LIMIT 1`)
+        .bind(body.sales_return_id)
+        .first<{ branch_id: string; business_date: string }>();
+
+      if (!ret?.branch_id || !ret?.business_date) {
+        return badRequest("sales_return_id not found");
+      }
+
+      const shouldRestock = (body.restock_to_inventory ?? 1) === 1;
+      const restockQty = Math.abs(Number(body.quantity));
+
+      try {
+        const statements = [
+          env.openclaw_pos
+            .prepare(`INSERT INTO sales_return_lines (id, sales_return_id, original_sales_receipt_line_id, sku_code, item_name, quantity, unit_price, tax_amount, discount_amount, line_total, restock_to_inventory, created_at)
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+            .bind(
+              body.id,
+              body.sales_return_id,
+              body.original_sales_receipt_line_id ?? null,
+              body.sku_code,
+              body.item_name ?? null,
+              restockQty,
+              body.unit_price,
+              body.tax_amount ?? 0,
+              body.discount_amount ?? 0,
+              body.line_total,
+              shouldRestock ? 1 : 0,
+              nowIso()
+            ),
+        ];
+
+        if (shouldRestock) {
+          statements.push(
+            env.openclaw_pos
+              .prepare(`INSERT INTO inventory_movements (id, movement_code, sku_code, branch_id, movement_type, quantity_delta, unit_cost, reference_type, reference_id, business_date, created_at)
+                        VALUES (?, ?, ?, ?, 'sale_return', ?, NULL, 'sales_return', ?, ?, ?)`)
+              .bind(
+                crypto.randomUUID(),
+                `RET-${Date.now()}`,
+                body.sku_code,
+                ret.branch_id,
+                restockQty,
+                body.sales_return_id,
+                ret.business_date,
+                nowIso()
+              )
+          );
+          statements.push(
+            env.openclaw_pos
+              .prepare(`UPDATE inventory_items SET quantity_on_hand = quantity_on_hand + ?, updated_at = ? WHERE sku_code = ? AND branch_id = ?`)
+              .bind(restockQty, nowIso(), body.sku_code, ret.branch_id)
+          );
+        }
+
+        await env.openclaw_pos.batch(statements);
+
+        return json({ ok: true, id: body.id, inventory_reversed: shouldRestock, quantity_restocked: shouldRestock ? restockQty : 0 }, 201);
+      } catch (e) {
+        return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
+      }
+    }
+
+    if (path === "/v1/sales-refunds" && method === "GET") {
+      const { results } = await env.openclaw_pos
+        .prepare(`SELECT * FROM sales_refunds ORDER BY refunded_at DESC LIMIT 500`)
+        .all();
+      return json({ ok: true, items: results ?? [] });
+    }
+
+    if (path === "/v1/sales-refunds" && method === "POST") {
+      const body = await readJson<{
+        id?: string; sales_return_id?: string; payment_method_id?: string; amount?: number; reference_no?: string | null; refund_status?: string;
+      }>(request);
+
+      if (!body?.id || !body.sales_return_id || !body.payment_method_id || body.amount === undefined) {
+        return badRequest("Required fields: id, sales_return_id, payment_method_id, amount");
+      }
+
+      try {
+        await env.openclaw_pos
+          .prepare(`INSERT INTO sales_refunds (id, sales_return_id, payment_method_id, amount, reference_no, refund_status, refunded_at, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+          .bind(
+            body.id,
+            body.sales_return_id,
+            body.payment_method_id,
+            body.amount,
+            body.reference_no ?? null,
+            body.refund_status ?? "processed",
+            nowIso(),
+            nowIso()
+          )
+          .run();
+
+        return json({ ok: true, id: body.id, status: body.refund_status ?? "processed" }, 201);
       } catch (e) {
         return json({ ok: false, error: "Insert failed", detail: String(e) }, 400);
       }

@@ -105,6 +105,9 @@ Also planned/expanding:
 - `GET/POST /v1/sales-receipts`
 - `GET/POST /v1/sales-receipt-lines`
 - `GET/POST /v1/sales-receipt-payments`
+- `GET/POST /v1/sales-returns`
+- `GET/POST /v1/sales-return-lines`
+- `GET/POST /v1/sales-refunds`
 - `GET /v1/day-close-summary?branch_id=<id>&business_date=YYYY-MM-DD`
 - `GET/POST /v1/till-sessions`
 - `POST /v1/till-sessions/close`
@@ -204,6 +207,7 @@ Latest delivered progress:
 - Core module APIs now live for customers, inventory, pricing, tax, and payments
 - Offline sync baseline added with outbox + conflict queues
 - Pakistan-first config baseline added (`tax.default_mode`, `currency.operational=PKR`, `currency.reporting=USD`)
+- Sales returns + refund APIs added with baseline inventory reversal on return lines (`0007_sales_returns_refunds_inventory_reversal.sql`)
 - Demo seed endpoint included for a Karachi branch + till setup (`/v1/seed/demo-branch`)
 
 Foundations are live, docs are expanding rapidly, and country packs are being generated in parallel.
