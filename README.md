@@ -155,6 +155,29 @@ Deploy:
 npx wrangler deploy
 ```
 
+## Frontend Prototype Preview (clickable shell)
+
+A demo-ready clickable frontend prototype is available at:
+- `web/index.html`
+
+Includes wired navigation flows for:
+- POS checkout
+- Returns/refunds
+- Till close
+- Day-close dashboard
+- Procurement PO
+- Payroll run
+
+Preview locally (no build step required):
+
+```bash
+cd web
+python3 -m http.server 8080
+```
+
+Then open:
+- `http://localhost:8080`
+
 ---
 
 ## Documentation Index
