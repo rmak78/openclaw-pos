@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Payroll Run Screen Mockup</title><link rel="stylesheet" href="./assets/mockups.css"/></head>
+<body>
+<header class="topbar"><a href="./index.html">← All mockups</a><strong>Payroll Run Screen</strong></header>
+<main class="wrap">
+  <div class="grid">
+    <section class="panel">
+      <h1>Monthly Payroll Run (Feb 2026)</h1>
+      <table class="table"><thead><tr><th>Employee</th><th>Dept</th><th>Net Pay</th><th>Changes</th><th>Status</th></tr></thead><tbody>
+        <tr><td>Ayesha K.</td><td>Sales</td><td>98,400</td><td>2 overtime entries</td><td><span class="state-good">Validated</span></td></tr>
+        <tr><td>Hamza R.</td><td>Warehouse</td><td>87,200</td><td>Leave deduction</td><td><span class="state-warn">Review needed</span></td></tr>
+        <tr><td>Iqra M.</td><td>Cash Ops</td><td>104,900</td><td>Bank account updated</td><td><span class="state-bad">Pending KYC</span></td></tr>
+      </tbody></table>
+      <div class="toolbar"><button class="btn">Import Attendance</button><button class="btn">Run Validation</button></div>
+    </section>
+    <aside class="panel">
+      <h2>Run Controls</h2>
+      <div class="kpis"><div class="kpi"><small>Employees</small><div class="v">124</div></div><div class="kpi"><small>Gross</small><div class="v">11.3M</div></div><div class="kpi"><small>Exceptions</small><div class="v state-bad">7</div></div></div>
+      <div class="chips" style="margin-top:12px"><span class="chip">Pre-check complete</span><span class="chip">Finance approval pending</span><span class="chip">Bank file not generated</span></div>
+      <div class="toolbar"><button class="btn primary">Submit for Finance Approval</button><button class="btn success">Finalize Payroll</button><button class="btn">Generate Bank File</button></div>
+      <small>States shown: validated employee, review warning, blocking compliance state.</small>
+    </aside>
+  </div>
+</main>
+</body></html>
