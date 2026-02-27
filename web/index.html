@@ -171,44 +171,46 @@
       </section>
 
       <section class="screen" id="day-close">
-        <h2>Day-Close Dashboard</h2>
-        <p>Management summary of sales, refunds, till variances, and posting readiness.</p>
+        <h2>Day-Close Command Center</h2>
+        <p>Executive snapshot for revenue health, control exceptions, and close readiness across tills.</p>
         <div class="grid">
-          <div class="card"><h3>Net Sales</h3><div class="stat">PKR 2.83M</div></div>
-          <div class="card"><h3>Refunds</h3><div class="stat">PKR 84K</div></div>
-          <div class="card"><h3>Tills Closed</h3><div class="stat status-ok">6 / 6</div></div>
-          <div class="card"><h3>Branch Reconciliation</h3><div class="small status-ok">Ready for FinOps posting</div></div>
+          <div class="card"><h3>Net Revenue (After Refunds)</h3><div class="stat">PKR 2.746M</div><div class="small">Gross PKR 2.830M • refunds PKR 84K • +9.8% vs last Friday</div></div>
+          <div class="card"><h3>Cash & Digital Mix</h3><div class="stat">32% / 68%</div><div class="small">Cash PKR 879K • Card/Wallet PKR 1.867M</div></div>
+          <div class="card"><h3>Till Closure Compliance</h3><div class="stat status-ok">6 / 6 Closed</div><div class="small">Average variance PKR -50 • largest variance PKR -300 (T2)</div></div>
+          <div class="card"><h3>Close Readiness</h3><div class="small status-ok">Finance posting pack is complete and ready for approval.</div><div class="small">Action: Review exception log and submit EOD close before 21:00.</div></div>
         </div>
         <div class="row" style="margin-top:12px;">
-          <button class="btn" data-go="procurement">Create Purchase Order</button>
-          <button class="btn primary" data-go="payroll">Open Payroll Run</button>
+          <button class="btn" data-go="procurement">Generate Replenishment PO</button>
+          <button class="btn primary" data-go="payroll">Review Payroll Exposure</button>
         </div>
       </section>
 
       <section class="screen" id="procurement">
-        <h2>Procurement — Purchase Order</h2>
-        <p>Raise branch replenishment PO linked to approved supplier and warehouse targets.</p>
+        <h2>Procurement — Replenishment PO</h2>
+        <p>Auto-suggested order based on today’s sell-through, safety stock, and supplier SLA.</p>
         <div class="grid">
-          <div class="card"><h3>Supplier</h3><div class="small">Global Foods Distributor Ltd.</div></div>
-          <div class="card"><h3>PO Value</h3><div class="stat">PKR 1.12M</div></div>
-          <div class="card"><h3>ETA</h3><div class="small">2026-03-02 • WH-KHI-CENTRAL</div></div>
+          <div class="card"><h3>Preferred Supplier</h3><div class="small">Global Foods Distributor Ltd. • OTIF 96.2% (90-day)</div><div class="small">Payment terms: Net 21 • Credit limit available: PKR 3.4M</div></div>
+          <div class="card"><h3>Recommended PO Value</h3><div class="stat">PKR 1.186M</div><div class="small">18 SKUs • 4 critical stockouts prevented • margin risk avoided PKR 420K</div></div>
+          <div class="card"><h3>Inbound Plan</h3><div class="small">ETA: 2026-03-02, 09:30 • Dock: WH-KHI-CENTRAL</div><div class="small">Priority: High (Milk, Bread Flour, Cooking Oil)</div></div>
+          <div class="card"><h3>Action Queue</h3><div class="small status-warn">2 lines exceed budget tolerance (>8%). Buyer approval required.</div><div class="small">Next step: Submit PO for manager sign-off.</div></div>
         </div>
         <div class="row" style="margin-top:12px;">
-          <button class="btn primary" data-go="day-close">Back to Day-Close</button>
-          <button class="btn" data-go="payroll">Continue to Payroll</button>
+          <button class="btn primary" data-go="day-close">Return to Day-Close</button>
+          <button class="btn" data-go="payroll">Proceed to Payroll Review</button>
         </div>
       </section>
 
       <section class="screen" id="payroll">
-        <h2>Payroll Run</h2>
-        <p>Lock attendance inputs, calculate gross-to-net, and queue payroll batch approvals.</p>
+        <h2>Payroll Run — Approval Prep</h2>
+        <p>Attendance is locked and payroll is computed. Review variance drivers before finance release.</p>
         <div class="grid">
-          <div class="card"><h3>Pay Cycle</h3><div class="small">Monthly • Feb 2026</div></div>
-          <div class="card"><h3>Employees</h3><div class="stat">186</div></div>
-          <div class="card"><h3>Net Pay</h3><div class="stat">PKR 19.4M</div></div>
-          <div class="card"><h3>Status</h3><div class="small status-ok">Draft generated • Awaiting CFO approval</div></div>
+          <div class="card"><h3>Cycle & Scope</h3><div class="small">Feb 2026 Monthly • 186 active employees • 4 branches</div><div class="small">Cutoff locked at 18:00 • 100% attendance sync complete</div></div>
+          <div class="card"><h3>Net Payroll Liability</h3><div class="stat">PKR 19.43M</div><div class="small">Gross PKR 24.88M • deductions PKR 5.45M • +3.1% vs Jan</div></div>
+          <div class="card"><h3>Exception Monitor</h3><div class="small status-warn">7 exceptions flagged</div><div class="small">3 overtime spikes • 2 unpaid leave mismatches • 2 bank detail changes</div></div>
+          <div class="card"><h3>Executive Summary</h3><div class="small status-ok">Run is financially within forecast and ready for CFO review.</div><div class="small">Action: Approve payroll batch by 10:00 tomorrow to meet bank file SLA.</div></div>
         </div>
         <div class="row" style="margin-top:12px;">
+          <button class="btn" data-go="day-close">Back to Day-Close Summary</button>
           <button class="btn primary" data-go="checkout">Restart Demo from Checkout</button>
         </div>
       </section>
@@ -220,9 +222,9 @@
       { id: 'checkout', label: 'POS Checkout', desc: 'Sales capture and payment completion' },
       { id: 'refunds', label: 'Returns / Refunds', desc: 'Receipt-based return and refund workflow' },
       { id: 'till-close', label: 'Till Close', desc: 'Cash reconciliation and variance capture' },
-      { id: 'day-close', label: 'Day-Close Dashboard', desc: 'Daily operational and finance summary' },
-      { id: 'procurement', label: 'Procurement PO', desc: 'Supplier purchase order creation' },
-      { id: 'payroll', label: 'Payroll Run', desc: 'Gross-to-net and pay batch approvals' }
+      { id: 'day-close', label: 'Day-Close Command Center', desc: 'Executive view of close health, controls, and posting readiness' },
+      { id: 'procurement', label: 'Procurement PO', desc: 'Replenishment planning, supplier confidence, and approval actions' },
+      { id: 'payroll', label: 'Payroll Run', desc: 'Payroll liability, exception control, and approval readiness' }
     ];
 
     const nav = document.getElementById('nav');
