@@ -8,8 +8,8 @@ Offline-first, multi-tier POS/ERP for real-world operations where connectivity i
 
 ## Project Homepage & Demo
 
-- **Project homepage (primary):** [bixitech.com/openclaw-pos](https://bixitech.com/openclaw-pos/)
-- **GitHub Pages mirror:** [rmak78.github.io/openclaw-pos](https://rmak78.github.io/openclaw-pos/)
+- **Project homepage (primary):** [rmak78.github.io/openclaw-pos](https://rmak78.github.io/openclaw-pos/)
+- **Hosted demo (LAMP):** [bixitech.com/openclaw-pos](https://bixitech.com/openclaw-pos/)
 - **Repository:** [github.com/rmak78/openclaw-pos](https://github.com/rmak78/openclaw-pos)
 
 ---
