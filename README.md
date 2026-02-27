@@ -106,6 +106,10 @@ Also planned/expanding:
 - `GET/POST /v1/sales-receipt-lines`
 - `GET/POST /v1/sales-receipt-payments`
 - `GET /v1/day-close-summary?branch_id=<id>&business_date=YYYY-MM-DD`
+- `GET/POST /v1/till-sessions`
+- `POST /v1/till-sessions/close`
+- `GET/POST /v1/cash-drops`
+- `GET/POST /v1/variance-reasons`
 - `GET/POST /v1/inventory-movements`
 - `GET/POST /v1/branch-reconciliations`
 - `POST /v1/seed/demo-branch`
