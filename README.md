@@ -105,6 +105,9 @@ Also planned/expanding:
 - `GET/POST /v1/sales-receipts`
 - `GET/POST /v1/sales-receipt-lines`
 - `GET/POST /v1/sales-receipt-payments`
+- `GET/POST /v1/sales-returns`
+- `GET/POST /v1/sales-return-lines`
+- `GET/POST /v1/sales-refunds`
 - `GET /v1/day-close-summary?branch_id=<id>&business_date=YYYY-MM-DD`
 - `GET/POST /v1/till-sessions`
 - `POST /v1/till-sessions/close`
@@ -112,6 +115,12 @@ Also planned/expanding:
 - `GET/POST /v1/variance-reasons`
 - `GET/POST /v1/inventory-movements`
 - `GET/POST /v1/branch-reconciliations`
+- `GET/POST /v1/suppliers`
+- `GET/POST /v1/purchase-orders`
+- `GET/POST /v1/goods-receipts`
+- `GET/POST /v1/pay-cycles`
+- `GET/POST /v1/pay-components`
+- `GET/POST /v1/payroll-runs`
 - `POST /v1/seed/demo-branch`
 - `POST /v1/connectors/shopify/order-webhook`
 - `POST /v1/connectors/amazon/order-webhook`
@@ -204,6 +213,8 @@ Latest delivered progress:
 - Core module APIs now live for customers, inventory, pricing, tax, and payments
 - Offline sync baseline added with outbox + conflict queues
 - Pakistan-first config baseline added (`tax.default_mode`, `currency.operational=PKR`, `currency.reporting=USD`)
+- Payroll v1 skeleton added (pay cycles, pay components, payroll runs + D1 migration `0007_payroll_v1_skeleton.sql`)
+- Sales returns + refund APIs added with baseline inventory reversal on return lines (`0008_sales_returns_refunds_inventory_reversal.sql`)
 - Demo seed endpoint included for a Karachi branch + till setup (`/v1/seed/demo-branch`)
 
 Foundations are live, docs are expanding rapidly, and country packs are being generated in parallel.

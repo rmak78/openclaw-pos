@@ -1,0 +1,21 @@
+{
+  "$schema": "https://example.com/design-token.schema.json",
+  "meta": { "version": "0.1.0", "description": "OpenClaw POS semantic color tokens" },
+  "color": {
+    "surface": { "base": "#FFFFFF", "subtle": "#F8FAFC", "inverse": "#0F172A" },
+    "text": { "primary": "#0F172A", "secondary": "#334155", "muted": "#64748B", "inverse": "#F8FAFC" },
+    "border": { "default": "#CBD5E1", "subtle": "#E2E8F0", "focus": "#2563EB" },
+    "action": {
+      "primary": { "default": "#2563EB", "hover": "#1D4ED8", "pressed": "#1E40AF", "disabled": "#93C5FD", "text": "#FFFFFF" },
+      "secondary": { "default": "#E2E8F0", "hover": "#CBD5E1", "pressed": "#94A3B8", "text": "#0F172A" },
+      "danger": { "default": "#DC2626", "hover": "#B91C1C", "pressed": "#991B1B", "text": "#FFFFFF" }
+    },
+    "feedback": {
+      "success": { "bg": "#DCFCE7", "text": "#166534", "border": "#86EFAC" },
+      "warning": { "bg": "#FEF3C7", "text": "#92400E", "border": "#FCD34D" },
+      "error": { "bg": "#FEE2E2", "text": "#991B1B", "border": "#FCA5A5" },
+      "info": { "bg": "#DBEAFE", "text": "#1E3A8A", "border": "#93C5FD" }
+    },
+    "overlay": { "scrim": "rgba(15, 23, 42, 0.56)" }
+  }
+}
