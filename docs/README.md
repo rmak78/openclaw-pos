@@ -45,6 +45,7 @@ This repository is **docs-first**: product/operational documentation must be upd
 2. `templates/release-notes-template.md`
 3. `reference/glossary.md`
 4. `operations/onboarding-checklist-new-country-region-branch.md`
+5. `operations/investor-pilot-walkthrough-script.md`
 
 ## 4) Authoring Standards (Multilingual-ready)
 
